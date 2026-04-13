@@ -1,7 +1,7 @@
-using PortfolioApplicationAPI.Application.Interfaces;
-using PortfolioApplicationAPI.Models;
+using AccountsApplicationAPI.Application.Interfaces;
+using AccountsApplicationAPI.Models;
 
-namespace PortfolioApplicationAPI.Infrastructure.ExternalClients;
+namespace AccountsApplicationAPI.Infrastructure.ExternalClients;
 
 public class ExternalAccountsClient(HttpClient httpClient, IConfiguration configuration) : IExternalAccountsClient
 {
