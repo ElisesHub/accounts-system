@@ -1,4 +1,4 @@
-namespace PortfolioApplicationAPI.Models;
+namespace AccountsApplicationAPI.Models;
 
 public class Account
 {
