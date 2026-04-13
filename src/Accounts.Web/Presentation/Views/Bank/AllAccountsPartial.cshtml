@@ -1,6 +1,6 @@
 
 
-@model IEnumerable<PortfolioFe.Models.Account>
+@model IEnumerable<PortfolioFe.Domain.Bank.Account>
 
 <h2>Accounts</h2>
 
@@ -10,10 +10,8 @@
         <th>Id</th>
         <th>First Name</th>
         <th>Last Name</th>
-        <th>Email</th>
-        <th>Balance</th>
-        <th>Overdraft Limit</th>
-        <th>Available Funds</th>
+        <th>Actions </th>
+
     </tr>
     </thead>
     <tbody>
@@ -23,10 +21,11 @@
             <td>@account.Id</td>
             <td>@account.FirstName</td>
             <td>@account.LastName</td>
-            <td>@account.Email</td>
-            <td>@account.Balance.ToString("C")</td>
-            <td>@account.OverdraftLimit.ToString("C")</td>
-            <td>@(account.Balance + account.OverdraftLimit).ToString("C")</td>
+            @* <td>@account.Email</td> *@
+            @* <td>@account.Balance.ToString("C")</td> *@
+            @* <td>@account.OverdraftLimit.ToString("C")</td> *@
+            @* <td>@((account.Balance + account.OverdraftLimit).ToString("C"))</td> *@
+            <td><a href=@($"/bank/account/{account.Id}")>View account details</a></td>
         </tr>
     }
     </tbody>

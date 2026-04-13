@@ -1,12 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
-
-namespace PortfolioFe.Controllers;
-
 using Auth0.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+
+namespace PortfolioFe.Presentation.Controllers;
 
 public class AuthController : Controller
 {
@@ -33,6 +31,6 @@ public class AuthController : Controller
     [Authorize]
     public IActionResult Profile()
     {
-        return View();
+        return View("~/Presentation/Views/Auth/Profile.cshtml");
     }
 }
