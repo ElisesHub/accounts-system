@@ -1,7 +1,7 @@
 using AccountsAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace PortfolioApplicationAPI.Controllers;
+namespace AccountsApplicationAPI.Controllers;
 
 
     [ApiController]
