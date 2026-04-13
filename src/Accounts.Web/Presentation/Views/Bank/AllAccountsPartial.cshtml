@@ -1,0 +1,33 @@
+
+
+@model IEnumerable<PortfolioFe.Models.Account>
+
+<h2>Accounts</h2>
+
+<table class="table table-striped table-bordered">
+    <thead>
+    <tr>
+        <th>Id</th>
+        <th>First Name</th>
+        <th>Last Name</th>
+        <th>Email</th>
+        <th>Balance</th>
+        <th>Overdraft Limit</th>
+        <th>Available Funds</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var account in Model)
+    {
+        <tr>
+            <td>@account.Id</td>
+            <td>@account.FirstName</td>
+            <td>@account.LastName</td>
+            <td>@account.Email</td>
+            <td>@account.Balance.ToString("C")</td>
+            <td>@account.OverdraftLimit.ToString("C")</td>
+            <td>@(account.Balance + account.OverdraftLimit).ToString("C")</td>
+        </tr>
+    }
+    </tbody>
+</table>

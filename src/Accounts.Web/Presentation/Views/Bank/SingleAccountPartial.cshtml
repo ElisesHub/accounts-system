@@ -1,0 +1,31 @@
+@model PortfolioFe.Models.Account
+
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">
+            @Model.FirstName @Model.LastName
+        </h5>
+
+        <h6 class="card-subtitle mb-2 text-muted">
+            Account ID: @Model.Id
+        </h6>
+
+        <p class="card-text">
+            <strong>Email:</strong> @Model.Email
+        </p>
+
+        <p class="card-text">
+            <strong>Balance:</strong> @Model.Balance.ToString("C")
+        </p>
+
+        <p class="card-text">
+            <strong>Overdraft Limit:</strong> @Model.OverdraftLimit.ToString("C")
+        </p>
+
+        <p class="card-text">
+            <strong>Available Funds:</strong>
+            @(Model.Balance + Model.OverdraftLimit).ToString("C")
+        </p>
+    </div>
+</div>
