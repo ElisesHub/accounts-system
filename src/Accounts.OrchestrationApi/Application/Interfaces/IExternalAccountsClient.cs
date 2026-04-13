@@ -1,6 +1,6 @@
-using PortfolioApplicationAPI.Models;
+using AccountsApplicationAPI.Models;
 
-namespace PortfolioApplicationAPI.Application.Interfaces;
+namespace AccountsApplicationAPI.Application.Interfaces;
 
 public interface IExternalAccountsClient
 {

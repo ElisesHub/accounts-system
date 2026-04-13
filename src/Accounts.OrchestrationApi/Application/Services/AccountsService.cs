@@ -1,6 +1,6 @@
 
-using PortfolioApplicationAPI.Application.Interfaces;
-using PortfolioApplicationAPI.Models;
+using AccountsApplicationAPI.Application.Interfaces;
+using AccountsApplicationAPI.Models;
 
 namespace AccountsAPI.Services;
 

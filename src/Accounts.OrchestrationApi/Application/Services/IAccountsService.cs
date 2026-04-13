@@ -1,5 +1,5 @@
 
-using PortfolioApplicationAPI.Models;
+using AccountsApplicationAPI.Models;
 
 namespace AccountsAPI.Services;
 
