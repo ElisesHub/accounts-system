@@ -1,4 +1,4 @@
-namespace PortfolioFe.Models;
+namespace PortfolioFe.Domain.Bank;
 
 public class Account
 {

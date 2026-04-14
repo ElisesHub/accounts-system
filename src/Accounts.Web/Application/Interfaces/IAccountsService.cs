@@ -1,9 +1,9 @@
 using PortfolioFe.Domain.Bank;
 
-namespace PortfolioFe.Application.Services;
+namespace PortfolioFe.Application.Interfaces;
 
 public interface IAccountsService
 {
     Task<Account?> GetAccountAsync(string accountId);
-    Task<List<Account>?> GetAccountsAsync();
+    Task<IEnumerable<Account>?> GetAccountsAsync();
 }

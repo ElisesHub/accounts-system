@@ -3,3 +3,12 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+*launchSettings.json
+.DS_Store
+.idea
+appsettings.json
+appsettings.Development.json
+# JetBrains IDE
+.idea/
+# Rider / ReSharper user settings
+*.DotSettings.user

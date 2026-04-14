@@ -1,19 +1,20 @@
-using PortfolioFe.Models;
+using PortfolioFe.Application.Interfaces;
+using PortfolioFe.Domain.Bank;
 
-namespace PortfolioFe.Services;
+namespace PortfolioFe.Application.Services;
 
-public class AccountsService(ApiService apiService) : IAccountsService
+public class AccountsService(IExternalAccountsClient externalAccountsClient) : IAccountsService
 {
     public async Task<Account?> GetAccountAsync(string accountId)
     {
-        var account = await apiService.GetAccountAsync(accountId);
+        var account = await externalAccountsClient.GetAccountAsync(accountId);
         if(account == null) throw new Exception("Account not found");
         return account;
     }
 
-    public async Task<List<Account>?> GetAccountsAsync()
+    public async Task<IEnumerable<Account>?> GetAccountsAsync()
     {
-        var accounts = await apiService.GetAccountsAsync();
+        var accounts = await externalAccountsClient.GetAccountsAsync();
         if(accounts == null) throw new Exception("No accounts found");
         return accounts;
     }

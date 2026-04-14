@@ -1,6 +1,7 @@
-using PortfolioApplicationAPI.Models;
 
-namespace PortfolioApplicationAPI.Application.Interfaces;
+using PortfolioFe.Domain.Bank;
+
+namespace PortfolioFe.Application.Interfaces;
 
 public interface IExternalAccountsClient
 {

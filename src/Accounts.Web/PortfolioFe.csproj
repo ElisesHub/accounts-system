@@ -6,4 +6,26 @@
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Auth0.AspNetCore.Authentication" Version="1.7.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Application\" />
+      <Folder Include="Infrastructure\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <AdditionalFiles Include="Presentation\Views\Auth\Profile.cshtml" />
+      <AdditionalFiles Include="Presentation\Views\Bank\AllAccountsPartial.cshtml" />
+      <AdditionalFiles Include="Presentation\Views\Bank\SingleAccountPartial.cshtml" />
+      <AdditionalFiles Include="Presentation\Views\Home\Index.cshtml" />
+      <AdditionalFiles Include="Presentation\Views\Home\Privacy.cshtml" />
+      <AdditionalFiles Include="Presentation\Views\Shared\Error.cshtml" />
+      <AdditionalFiles Include="Presentation\Views\Shared\_Layout.cshtml" />
+      <AdditionalFiles Include="Presentation\Views\Shared\_ValidationScriptsPartial.cshtml" />
+      <AdditionalFiles Include="Presentation\Views\_ViewImports.cshtml" />
+      <AdditionalFiles Include="Presentation\Views\_ViewStart.cshtml" />
+    </ItemGroup>
+
 </Project>
