@@ -1,11 +1,13 @@
 using AccountsAPI.Services;
-using PortfolioApplicationAPI.Application.Interfaces;
-using PortfolioApplicationAPI.Infrastructure.ExternalClients;
+using AccountsApplicationAPI.Application.Interfaces;
+using AccountsApplicationAPI.Infrastructure.ExternalClients;
+using PortfolioApplicationAPI.Presentation.ExceptionHandling;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -16,6 +18,7 @@ builder.Services.AddHttpClient<IExternalAccountsClient, ExternalAccountsClient>(
 });
 
 var app = builder.Build();
+app.UseExceptionHandler();
 app.MapControllers();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

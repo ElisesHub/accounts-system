@@ -3,7 +3,13 @@ using AccountsApplicationAPI.Models;
 
 namespace AccountsApplicationAPI.Infrastructure.ExternalClients;
 
-public class ExternalAccountsClient(HttpClient httpClient, IConfiguration configuration) : IExternalAccountsClient
+/// <summary>
+/// ExternalAccountsClient is responsible for interacting with external account services.
+/// It provides methods to retrieve account information by account identifier or to get a list of accounts.
+/// </summary>
+public class ExternalAccountsClient(
+    HttpClient httpClient,
+    IConfiguration configuration) : IExternalAccountsClient
 {
     private const string AccountsUrl = "api/accounts";
 
@@ -18,6 +24,7 @@ public class ExternalAccountsClient(HttpClient httpClient, IConfiguration config
     {
         var request = SetUpRequest($"{AccountsUrl}/{id}");
         var response = await httpClient.SendAsync(request);
+        await ThrowIfNotSuccessStatusCode(response);
         return await response.Content.ReadFromJsonAsync<Account>();
     }
     /// <summary>
@@ -30,17 +37,36 @@ public class ExternalAccountsClient(HttpClient httpClient, IConfiguration config
     {
         var request = SetUpRequest(AccountsUrl);
         var response = await httpClient.SendAsync(request);
+        await ThrowIfNotSuccessStatusCode(response);
         return await response.Content.ReadFromJsonAsync<IEnumerable<Account>>();
     }
     /// <summary>
-    /// Configures and returns an HTTP request message to retrieve a specific account by its identifier.
+    /// Throws an exception if the HTTP response indicates an unsuccessful status code.
     /// </summary>
-    /// <param name="id">The identifier of the account to retrieve.</param>
-    /// <returns>An <see cref="HttpRequestMessage"/> configured with the appropriate HTTP method, URL, and headers needed to request the account details.</returns>
+    /// <param name="response">The <see cref="HttpResponseMessage"/> to evaluate.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <exception cref="Exception">
+    /// Thrown when the HTTP response contains a non-success status code. The exception includes the
+    /// status code, reason phrase, and response body for diagnostic purposes.
+    /// </exception>
+    private async Task ThrowIfNotSuccessStatusCode(HttpResponseMessage response)
+    {
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new Exception(
+                $"ExternalAccountsClient failed. Status: {(int)response.StatusCode} {response.ReasonPhrase}. Body: {body}");
+        }
+    }
+    /// <summary>
+    /// Sets up an HTTP GET request with the specified folder structure appended to the base address.
+    /// </summary>
+    /// <param name="folderStructure">The folder structure to append to the base address for the request URI.</param>
+    /// <returns>A <see cref="HttpRequestMessage"/> object configured with the appropriate URI and headers.</returns>
     private HttpRequestMessage SetUpRequest(string folderStructure)
     {
         var request = new HttpRequestMessage(HttpMethod.Get,
-            $"{httpClient.BaseAddress}{folderStructure}");
+            folderStructure);
         AddApiKeyHeader(request);
         return request;
     }

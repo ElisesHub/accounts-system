@@ -59,7 +59,6 @@ namespace AccountsApplicationAPI.Controllers;
             {
                 return false;
             }
-
             var storedKey = configuration.GetValue<string>("AppAPIKey");
             if (string.IsNullOrWhiteSpace(storedKey))
             {
