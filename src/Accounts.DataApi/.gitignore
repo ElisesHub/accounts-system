@@ -4,5 +4,9 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 *launchSettings.json
+# JetBrains IDE
+.idea/
+# Rider / ReSharper user settings
+*.DotSettings.user
 appsettings.json
 appsettings.Development.json

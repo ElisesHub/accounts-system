@@ -123,6 +123,7 @@ public class AccountsRepository(IConfiguration configuration) : IAccountsReposit
             }
             catch (Exception e)
             {
+                //TODO: add logging
                 throw;
             }
         }

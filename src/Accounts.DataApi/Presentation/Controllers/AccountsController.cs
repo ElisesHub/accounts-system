@@ -31,13 +31,9 @@ public class AccountsController(
     {
         try
         {
-            if (!IsAuthorised())
-            {
-                return Unauthorized("Unable to access resource.");
-            }
-
+            var incomingApiKey = GetIncomingApiKey();
             var account =
-                await accountsService.GetAccountAsync(id.ToString());
+                await accountsService.GetAccountAsync(id.ToString(), incomingApiKey);
 
             if (account == null) return NotFound();
             if (account.Id != id) return BadRequest("Invalid account id");
@@ -66,12 +62,8 @@ public class AccountsController(
     {
         try
         {
-            if (!IsAuthorised())
-            {
-                return Unauthorized("Unable to access resource.");
-            }
-
-            var accounts = await accountsService.GetAccountsAsync();
+            var incomingApiKey = GetIncomingApiKey();
+            var accounts = await accountsService.GetAccountsAsync(incomingApiKey);
 
             return Ok(accounts ?? []);
         }
@@ -92,24 +84,20 @@ public class AccountsController(
     /// <exception cref="Exception">
     /// Thrown when the stored API key is not set in the configuration.
     /// </exception>
-    private bool IsAuthorised()
+    private string? GetIncomingApiKey()
     {
         if (!Request.Headers.TryGetValue("x-api-key", out var incomingKey))
         {
-            return false;
+            throw new UnauthorizedAccessException("API key is not set.");
         }
 
-        var storedKey = configuration.GetValue<string>("AccountsAPIKey");
-        if (string.IsNullOrWhiteSpace(storedKey))
+        if (string.IsNullOrWhiteSpace(incomingKey))
         {
-            throw new Exception("Key is not set in configuration.");
+            throw new UnauthorizedAccessException("API key is not set.");
         }
 
-        return IsMatch(incomingKey, storedKey);
+        return incomingKey;
     }
 
-    private bool IsMatch(string incomingKey, string storedKey)
-    {
-        return string.Equals(incomingKey, storedKey, StringComparison.Ordinal);
-    }
+
 }
