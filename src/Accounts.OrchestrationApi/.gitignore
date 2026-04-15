@@ -7,7 +7,9 @@ riderModule.iml
 *launchSettings.json
 appsettings.json
 appsettings.Development.json
+
 # JetBrains IDE
 .idea/
+
 # Rider / ReSharper user settings
 *.DotSettings.user
