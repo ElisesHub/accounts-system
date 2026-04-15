@@ -11,7 +11,7 @@ public class ApiKeyValidator(IConfiguration configuration) : IApiKeyValidator
             return false;
         }
 
-        var storedKey = configuration.GetValue<string>("AccountsAPIKey");
+        var storedKey = configuration.GetValue<string>("AppAPIKey");
         if (string.IsNullOrWhiteSpace(storedKey))
         {
             throw new Exception("Key is not set in configuration.");

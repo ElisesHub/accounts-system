@@ -1,6 +1,8 @@
 using AccountsAPI.Services;
 using AccountsApplicationAPI.Application.Interfaces;
 using AccountsApplicationAPI.Infrastructure.ExternalClients;
+using PortfolioApplicationAPI.Application.Interfaces;
+using PortfolioApplicationAPI.Infrastructure.Security;
 using PortfolioApplicationAPI.Presentation.ExceptionHandling;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +14,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IAccountsService, AccountsService>();
+builder.Services.AddScoped<IApiKeyValidator, ApiKeyValidator>();
 builder.Services.AddHttpClient<IExternalAccountsClient, ExternalAccountsClient>(client =>
 {
     client.BaseAddress = new Uri("http://localhost:5253");
