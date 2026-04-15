@@ -6,6 +6,11 @@ public class ApiKeyValidator(IConfiguration configuration) : IApiKeyValidator
 {
     public bool IsValid(string incomingKey)
     {
+        if (!CheckIsValidApiKey(incomingKey))
+        {
+            return false;
+        }
+
         var storedKey = configuration.GetValue<string>("AccountsAPIKey");
         if (string.IsNullOrWhiteSpace(storedKey))
         {
@@ -16,5 +21,14 @@ public class ApiKeyValidator(IConfiguration configuration) : IApiKeyValidator
     private bool IsMatch(string incomingKey, string storedKey)
     {
         return string.Equals(incomingKey, storedKey, StringComparison.Ordinal);
+    }
+    private bool CheckIsValidApiKey(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return false;
+        }
+
+        return true;
     }
 }

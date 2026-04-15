@@ -74,15 +74,13 @@ public class AccountsController(
     }
 
     /// <summary>
-    /// Checks if the incoming request is authorized by validating the provided API key
-    /// against the stored key in the configuration.
+    /// Extracts the incoming API key from the request headers for authorization purposes.
     /// </summary>
     /// <returns>
-    /// True if the incoming API key matches the stored API key in the configuration;
-    /// otherwise, false.
+    /// A <see cref="string"/> containing the API key if successfully retrieved from the request headers.
     /// </returns>
-    /// <exception cref="Exception">
-    /// Thrown when the stored API key is not set in the configuration.
+    /// <exception cref="UnauthorizedAccessException">
+    /// Thrown when the API key is missing or invalid in the request headers.
     /// </exception>
     private string? GetIncomingApiKey()
     {
