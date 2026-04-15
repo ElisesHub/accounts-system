@@ -18,5 +18,9 @@
   <ItemGroup>
     <ProjectReference Include="..\AccountsAPI\AccountsAPI.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="UnitTests\Application\" />
+  </ItemGroup>
   
 </Project>
