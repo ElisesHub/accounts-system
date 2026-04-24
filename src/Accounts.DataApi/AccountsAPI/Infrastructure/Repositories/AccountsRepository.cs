@@ -30,7 +30,7 @@ public class AccountsRepository(IConfiguration configuration) : IAccountsReposit
                         {
                             if (reader["id"] != DBNull.Value)
                             {
-                                account.Id = Convert.ToInt32(reader["id"]);
+                                account.Id = AccountId.From((int)reader["id"]);
                             }
 
                             if (reader["firstname"] != DBNull.Value)
@@ -93,7 +93,7 @@ public class AccountsRepository(IConfiguration configuration) : IAccountsReposit
 
                             if (reader["id"] != DBNull.Value)
                             {
-                                account.Id = Convert.ToInt32(reader["id"]);
+                                account.Id = AccountId.From((int)reader["id"]);
                             }
 
                             if (reader["firstname"] != DBNull.Value)
@@ -103,7 +103,7 @@ public class AccountsRepository(IConfiguration configuration) : IAccountsReposit
 
                             if (reader["lastname"] != DBNull.Value)
                             {
-                                account.LastName = reader["lastname"].ToString();
+                                account.LastName = reader["lastname"]?.ToString();
                             }
 
                             if (reader["currentBalance"] != DBNull.Value)

@@ -8,7 +8,7 @@ using FluentAssertions;
 using Moq;
 using Xunit;
 
-namespace AccountsAPI.Tests.UnitTests.Services;
+namespace AccountsAPI.Tests.UnitTests.Application.Services;
 
 public class AccountsServiceTests
 {
@@ -18,7 +18,7 @@ public class AccountsServiceTests
         // Arrange
         var returnedAccount = new Account()
         {
-            Id=1,
+            Id= AccountId.Create("1").Value,
             FirstName = "John",
             LastName = "Smith",
             Balance = 1500.50m,
@@ -30,17 +30,15 @@ public class AccountsServiceTests
             .Setup(r => r.GetAccountAsync("1"))
             .ReturnsAsync(returnedAccount);
 
-        var apiKeyValidator = new Mock<IApiKeyValidator>();
-        apiKeyValidator.Setup(r => r.IsValid(It.IsAny<string>())).Returns(true);
-
-        var service = new AccountsService(accountsRepo.Object, apiKeyValidator.Object);
+        var service = new AccountsService(accountsRepo.Object);
 
         // Act
-        var result = await service.GetAccountAsync("1", "test");
+        var result = await service.GetAccountAsync("1");
 
         //Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(returnedAccount);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeEquivalentTo(returnedAccount);
 
     }
     [Fact]
@@ -51,7 +49,7 @@ public class AccountsServiceTests
         {
             new()
             {
-                Id=1,
+                Id=  AccountId.Create("1").Value,
                 FirstName = "John",
                 LastName = "Smith",
                 Balance = 1500.50m,
@@ -59,7 +57,7 @@ public class AccountsServiceTests
             },
             new()
             {
-                Id=1,
+                Id = AccountId.Create("2").Value,
                 FirstName = "Jane",
                 LastName = "Smith",
                 Balance = 1000.50m,
@@ -71,18 +69,17 @@ public class AccountsServiceTests
         accountsRepo.Setup(r => r.GetAccountsAsync())
             .ReturnsAsync(accounts);
 
-        var apiKeyValidator = new Mock<IApiKeyValidator>();
-        apiKeyValidator.Setup(r => r.IsValid(It.IsAny<string>())).Returns(true);
 
-        var accountsService = new AccountsService(accountsRepo.Object, apiKeyValidator.Object);
-        var result = await accountsService.GetAccountsAsync("test");
+        var accountsService = new AccountsService(accountsRepo.Object);
+        var result = await accountsService.GetAccountsAsync();
 
         // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Errors.Should().BeNullOrEmpty();
         result.Should().NotBeNull();
-        result.Should().HaveCount(2);
-        result.Should().BeEquivalentTo(accounts);
-        result.First().Should().BeEquivalentTo(accounts.First());
-
-
+        result.Value.Should().NotBeNull();
+        result.Value.Should().HaveCount(2);
+        result.Value.Should().BeEquivalentTo(accounts);
+        result.Value.First().Should().BeEquivalentTo(accounts.First());
     }
 }

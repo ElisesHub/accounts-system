@@ -1,4 +1,5 @@
 using AccountsAPI.Application.Interfaces;
+using AccountsAPI.Application.Models;
 using AccountsAPI.Domain.Entities;
 using AccountsAPI.Infrastructure.Repositories;
 
@@ -7,7 +8,7 @@ namespace AccountsAPI.Application.Services;
 /// <summary>
 /// Provides services for managing and retrieving account information.
 /// </summary>
-public class AccountsService(IAccountsRepository accountsRepository, IApiKeyValidator apiKeyValidator)
+public class AccountsService(IAccountsRepository accountsRepository)
     : IAccountsService
 {
     /// <summary>
@@ -17,14 +18,21 @@ public class AccountsService(IAccountsRepository accountsRepository, IApiKeyVali
     /// <param name="incomingApiKey"></param>
     /// <returns>The <see cref="Account"/> object if found, or null if no account matches the specified identifier.</returns>
     /// <exception cref="Exception">Thrown when no account is found with the specified identifier.</exception>
-    public async Task<Account?> GetAccountAsync(string accountId, string incomingApiKey)
+    public async Task<Result<Account>> GetAccountAsync(string accountId)
     {
-        ValidateIncomingApiKey(incomingApiKey);
-        ValidateAccountId(accountId);
-
+        var result = AccountId.Create(accountId);
+        if (!result.IsSuccess)
+        {
+            return Result<Account>.Validation(result.Errors);
+        }
         var account = await accountsRepository.GetAccountAsync(accountId);
-        if(account == null) throw new Exception("Account not found");
-        return account;
+
+        if (account == null || account.Id == default)
+        {
+            return Result<Account>.NotFound("Account not found");
+        }
+
+        return Result<Account>.Success(account);
     }
 
     /// <summary>
@@ -32,25 +40,17 @@ public class AccountsService(IAccountsRepository accountsRepository, IApiKeyVali
     /// </summary>
     /// <returns>A list of <see cref="Account"/> objects, or null if no accounts are found.</returns>
     /// <exception cref="Exception">Thrown when no accounts are found in the repository.</exception>
-    public async Task<List<Account>?> GetAccountsAsync(string incomingApiKey)
+    public async Task<Result<List<Account>?>> GetAccountsAsync()
     {
-        ValidateIncomingApiKey(incomingApiKey);
-
         var accounts = await accountsRepository.GetAccountsAsync();
-        if(accounts == null) throw new Exception("No accounts found");
-        return accounts;
+        if (accounts == null || accounts.Count == 0)
+        {
+            return Result<List<Account>?>.NotFound("No accounts found");
+        }
+
+        return Result<List<Account>?>.Success(accounts);
     }
 
-    private void ValidateIncomingApiKey(string incomingApiKey)
-    {
-        if (!apiKeyValidator.IsValid(incomingApiKey)) throw new UnauthorizedAccessException("Invalid API key");
-    }
 
-    private void ValidateAccountId(string accountId)
-    {
-        if (string.IsNullOrWhiteSpace(accountId)) throw new ArgumentException("Account id is required", nameof(accountId));
-        if (!int.TryParse(accountId, out _)) throw new ArgumentException("Account id must be a number", nameof(accountId));
 
-        if (accountId == "0") throw new ArgumentException("Account id cannot be 0", nameof(accountId));
-    }
 }

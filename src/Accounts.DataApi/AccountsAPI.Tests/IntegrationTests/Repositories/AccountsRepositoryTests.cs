@@ -36,7 +36,7 @@ public class
 
         result.Should().BeEquivalentTo( new
         {
-            Id = 1,
+            Id = AccountId.Create("1").Value,
             FirstName = "John",
             LastName = "Smith",
             Balance = 1500.50m,
@@ -61,7 +61,7 @@ public class
         result.First().Should().BeEquivalentTo(
             new
             {
-                Id = 1,
+                Id = AccountId.Create("1").Value,
                 FirstName = "John",
                 LastName = "Smith",
                 Balance = 1500.50m,
