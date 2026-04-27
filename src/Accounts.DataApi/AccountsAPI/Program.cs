@@ -63,7 +63,7 @@ builder.Services.AddScoped<IAccountsRepository, AccountsRepository>();
 builder.Services.AddScoped<IAccountsService, AccountsService>();
 builder.Services.AddScoped<IApiKeyValidator, ApiKeyValidator>();
 var app = builder.Build();
-
+app.UseExceptionHandler();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -71,10 +71,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler();
-}
+
 
 app.MapControllers().RequireAuthorization("RequireApiKey");
 // app.UseHttpsRedirection();

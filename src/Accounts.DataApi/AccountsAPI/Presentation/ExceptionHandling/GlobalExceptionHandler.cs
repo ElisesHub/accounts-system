@@ -1,6 +1,6 @@
 namespace AccountsAPI.Presentation.ExceptionHandling;
 
-using AccountsAPI.Presentation.Models;
+using Models;
 using Microsoft.AspNetCore.Diagnostics;
 
 public sealed class GlobalExceptionHandler(

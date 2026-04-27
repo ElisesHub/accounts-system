@@ -68,7 +68,7 @@ public class AccountsRepository(IConfiguration configuration) : IAccountsReposit
         return account;
     }
 
-    public async Task<List<Account>?> GetAccountsAsync()
+    public async Task<IReadOnlyList<Account>?> GetAccountsAsync()
     {
         List<Account> list = new List<Account>();
 
