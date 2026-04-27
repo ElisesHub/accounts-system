@@ -1,6 +1,6 @@
 
 
-@model IEnumerable<PortfolioFe.Domain.Bank.Account>
+@model IEnumerable<PortfolioFe.Domain.Bank.Account>?
 
 <h2>Accounts</h2>
 
@@ -15,18 +15,25 @@
     </tr>
     </thead>
     <tbody>
-    @foreach (var account in Model)
+    @if (Model ==  null || !Model.Any())
     {
-        <tr>
-            <td>@account.Id</td>
-            <td>@account.FirstName</td>
-            <td>@account.LastName</td>
-            @* <td>@account.Email</td> *@
-            @* <td>@account.Balance.ToString("C")</td> *@
-            @* <td>@account.OverdraftLimit.ToString("C")</td> *@
-            @* <td>@((account.Balance + account.OverdraftLimit).ToString("C"))</td> *@
-            <td><a href=@($"/bank/account/{account.Id}")>View account details</a></td>
-        </tr>
+        <tr><td colspan="4">No accounts found</td></tr>
+    }
+    else
+    {
+        @foreach (var account in Model)
+        {
+            <tr>
+                <td>@account.Id</td>
+                <td>@account.FirstName</td>
+                <td>@account.LastName</td>
+                @* <td>@account.Email</td> *@
+                @* <td>@account.Balance.ToString("C")</td> *@
+                @* <td>@account.OverdraftLimit.ToString("C")</td> *@
+                @* <td>@((account.Balance + account.OverdraftLimit).ToString("C"))</td> *@
+                <td><a href=@($"/bank/account/{account.Id}")>View account details</a></td>
+            </tr>
+        }
     }
     </tbody>
 </table>

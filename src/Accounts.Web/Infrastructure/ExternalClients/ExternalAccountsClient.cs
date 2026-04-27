@@ -1,3 +1,4 @@
+using System.Net;
 using PortfolioFe.Application.Interfaces;
 using PortfolioFe.Domain.Bank;
 
@@ -18,7 +19,8 @@ public class ExternalAccountsClient(HttpClient httpClient, IConfiguration config
     {
         var request = SetUpRequest($"{AccountsUrl}/{id}");
         var response = await httpClient.SendAsync(request);
-        await ThrowIfNotSuccessStatusCode(response);
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        await EnsureSuccessOrNotFound(response);
         return await response.Content.ReadFromJsonAsync<Account>();
     }
     /// <summary>
@@ -31,7 +33,8 @@ public class ExternalAccountsClient(HttpClient httpClient, IConfiguration config
     {
         var request = SetUpRequest(AccountsUrl);
         var response = await httpClient.SendAsync(request);
-        await ThrowIfNotSuccessStatusCode(response);
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        await EnsureSuccessOrNotFound(response);
         return await response.Content.ReadFromJsonAsync<IEnumerable<Account>>();
     }
 
@@ -44,14 +47,17 @@ public class ExternalAccountsClient(HttpClient httpClient, IConfiguration config
     /// Thrown when the HTTP response contains a non-success status code. The exception includes the
     /// status code, reason phrase, and response body for diagnostic purposes.
     /// </exception>
-    private async Task ThrowIfNotSuccessStatusCode(HttpResponseMessage response)
+    private async Task EnsureSuccessOrNotFound(HttpResponseMessage response)
     {
-        if (!response.IsSuccessStatusCode)
+        if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotFound)
         {
-            var body = await response.Content.ReadAsStringAsync();
+            return;
+        }
+
+        var body = await response.Content.ReadAsStringAsync();
             throw new Exception(
                 $"ExternalAccountsClient failed. Status: {(int)response.StatusCode} {response.ReasonPhrase}. Body: {body}");
-        }
+
     }
 
 
