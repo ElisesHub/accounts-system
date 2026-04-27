@@ -1,39 +1,37 @@
 
 using AccountsApplicationAPI.Application.Interfaces;
-using AccountsApplicationAPI.Models;
+using FluentResults;
+using PortfolioApplicationAPI.Application.Common.Errors;
+using PortfolioApplicationAPI.Application.Dtos.ApiResponses;
 using PortfolioApplicationAPI.Application.Interfaces;
+using PortfolioApplicationAPI.Application.Mappings;
+using PortfolioApplicationAPI.Domain.Entities;
 
 namespace AccountsAPI.Services;
 
-public class AccountsService(IExternalAccountsClient externalAccountsClient, IApiKeyValidator apiKeyValidator ) : IAccountsService
+public class AccountsService(IExternalAccountsClient externalAccountsClient ) : IAccountsService
 {
-    public async Task<Account?> GetAccountAsync(string accountId, string incomingApiKey)
+    public async Task<Result<AccountResponse?>> GetAccountAsync(string accountId)
     {
-        ValidateIncomingApiKey(incomingApiKey);
-        ValidateAccountId(accountId);
         var account = await externalAccountsClient.GetAccountAsync(accountId);
         if(account == null) throw new Exception("Account not found");
-        return account;
+
+        if (account.Id.Value <= 0 || account.Id == default)
+            return Result.Fail<AccountResponse?>(new NotFoundError("No account found"));
+
+        return Result.Ok(AccountMappings.ToResponse(account));
+
     }
 
-    public async Task<IEnumerable<Account>?> GetAccountsAsync(string incomingApiKey)
+    public async Task<Result<IReadOnlyList<AccountResponse>>> GetAccountsAsync()
     {
-        ValidateIncomingApiKey(incomingApiKey);
-        var accounts = await externalAccountsClient.GetAccountsAsync();
-        if(accounts == null) throw new Exception("No accounts found");
-        return accounts;
+        var accountList = await externalAccountsClient.GetAccountsAsync();
+
+        if (accountList is  null || !accountList.Any())
+            return Result.Fail("No accounts found");
+
+        return Result.Ok(AccountMappings.ToResponse(accountList));
     }
 
-    private void ValidateIncomingApiKey(string incomingApiKey)
-    {
-        if (!apiKeyValidator.IsValid(incomingApiKey)) throw new UnauthorizedAccessException("Invalid API key");
-    }
 
-    private void ValidateAccountId(string accountId)
-    {
-        if (string.IsNullOrWhiteSpace(accountId)) throw new ArgumentException("Account id is required", nameof(accountId));
-        if (!int.TryParse(accountId, out _)) throw new ArgumentException("Account id must be a number", nameof(accountId));
-
-        if (accountId == "0") throw new ArgumentException("Account id cannot be 0", nameof(accountId));
-    }
 }

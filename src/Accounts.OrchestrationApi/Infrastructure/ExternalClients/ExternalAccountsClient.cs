@@ -1,7 +1,11 @@
+using System.Net;
+using System.Text.Json;
 using AccountsApplicationAPI.Application.Interfaces;
-using AccountsApplicationAPI.Models;
+using FluentResults;
+using PortfolioApplicationAPI.Domain.Entities;
+using PortfolioApplicationAPI.Infrastructure.Dtos;
 
-namespace AccountsApplicationAPI.Infrastructure.ExternalClients;
+namespace PortfolioApplicationAPI.Infrastructure.ExternalClients;
 
 /// <summary>
 /// ExternalAccountsClient is responsible for interacting with external account services.
@@ -24,8 +28,19 @@ public class ExternalAccountsClient(
     {
         var request = SetUpRequest($"{AccountsUrl}/{id}");
         var response = await httpClient.SendAsync(request);
-        await ThrowIfNotSuccessStatusCode(response);
-        return await response.Content.ReadFromJsonAsync<Account>();
+        await EnsureSuccessOrNotFound(response);
+        var dto =  await response.Content.ReadFromJsonAsync<AccountDto>();
+        return new Account()
+        {
+            Id = AccountId.From(dto.Id),
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            Email = dto.Email,
+            Balance = dto.Balance,
+            OverdraftLimit = dto.OverdraftLimit
+
+        };
+
     }
     /// <summary>
     /// Retrieves a collection of accounts asynchronously.
@@ -33,12 +48,35 @@ public class ExternalAccountsClient(
     /// <returns>A task that represents the asynchronous operation. The task result contains an enumerable collection of <see cref="Account"/> objects, or null if no accounts are found.</returns>
     /// <exception cref="HttpRequestException">Thrown when the request to retrieve accounts fails.</exception>
     /// <exception cref="Exception">Thrown if the response content cannot be deserialized into an enumerable collection of accounts.</exception>
-    public async Task<IEnumerable<Account>?> GetAccountsAsync()
+    public async Task<IReadOnlyList<Account>?> GetAccountsAsync()
     {
         var request = SetUpRequest(AccountsUrl);
         var response = await httpClient.SendAsync(request);
-        await ThrowIfNotSuccessStatusCode(response);
-        return await response.Content.ReadFromJsonAsync<IEnumerable<Account>>();
+
+        if (response is {StatusCode: HttpStatusCode.NotFound, IsSuccessStatusCode: false})
+        {
+            return null;
+        }
+        await EnsureSuccessOrNotFound(response);
+
+        var dtoList = await response.Content.ReadFromJsonAsync<IReadOnlyList<AccountDto>>();
+
+        if (dtoList is null)
+            return null;
+
+        IReadOnlyList<Account> list = dtoList.Select(dto => new Account
+        {
+            Id = AccountId.From(dto.Id),
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            Email = dto.Email,
+            Balance = dto.Balance,
+            OverdraftLimit = dto.OverdraftLimit
+        }).ToList();
+
+        return list;
+
+
     }
     /// <summary>
     /// Throws an exception if the HTTP response indicates an unsuccessful status code.
@@ -49,14 +87,17 @@ public class ExternalAccountsClient(
     /// Thrown when the HTTP response contains a non-success status code. The exception includes the
     /// status code, reason phrase, and response body for diagnostic purposes.
     /// </exception>
-    private async Task ThrowIfNotSuccessStatusCode(HttpResponseMessage response)
+    private async Task EnsureSuccessOrNotFound(HttpResponseMessage response)
     {
-        if (!response.IsSuccessStatusCode)
+        if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotFound)
         {
-            var body = await response.Content.ReadAsStringAsync();
-            throw new Exception(
-                $"ExternalAccountsClient failed. Status: {(int)response.StatusCode} {response.ReasonPhrase}. Body: {body}");
+            return;
         }
+
+        var body = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException(
+                $"External Accounts Client failed. Status: {(int)response.StatusCode} {response.ReasonPhrase}. Body: {body}", null, response.StatusCode);
+
     }
     /// <summary>
     /// Sets up an HTTP GET request with the specified folder structure appended to the base address.

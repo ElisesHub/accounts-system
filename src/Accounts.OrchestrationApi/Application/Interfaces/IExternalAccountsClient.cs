@@ -1,9 +1,10 @@
-using AccountsApplicationAPI.Models;
+using FluentResults;
+using PortfolioApplicationAPI.Domain.Entities;
 
 namespace AccountsApplicationAPI.Application.Interfaces;
 
 public interface IExternalAccountsClient
 {
     Task<Account?> GetAccountAsync(string id);
-    Task<IEnumerable<Account>?> GetAccountsAsync();
+    Task<IReadOnlyList<Account>?> GetAccountsAsync();
 }

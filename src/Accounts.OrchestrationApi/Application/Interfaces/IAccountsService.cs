@@ -1,10 +1,12 @@
 
-using AccountsApplicationAPI.Models;
+using FluentResults;
+using PortfolioApplicationAPI.Application.Dtos.ApiResponses;
+using PortfolioApplicationAPI.Domain.Entities;
 
-namespace AccountsAPI.Services;
+namespace PortfolioApplicationAPI.Application.Interfaces;
 
 public interface IAccountsService
 {
-    Task<Account?> GetAccountAsync(string accountId, string incomingApiKey);
-    Task<IEnumerable<Account>?> GetAccountsAsync(string incomingApiKey);
+    Task<Result<AccountResponse?>> GetAccountAsync(string accountId);
+    Task<Result<IReadOnlyList<AccountResponse>>> GetAccountsAsync();
 }
