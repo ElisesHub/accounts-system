@@ -5,15 +5,13 @@ using MySqlConnector;
 
 namespace AccountsAPI.Infrastructure.Repositories;
 
-public class AccountsRepository(IConfiguration configuration) : IAccountsRepository
+public class AccountsRepository(MySqlDataSource dataSource) : IAccountsRepository
 {
     public async Task<Account?> GetAccountAsync(string accountId)
     {
         Account account = new Account();
-        string sqlconnectionstring =
-            configuration.GetConnectionString("AccountsDb");
 
-        using (MySqlConnection con = new MySqlConnection(sqlconnectionstring))
+        using (MySqlConnection con = await dataSource.OpenConnectionAsync())
         {
 
             try
@@ -72,10 +70,8 @@ public class AccountsRepository(IConfiguration configuration) : IAccountsReposit
     {
         List<Account> list = new List<Account>();
 
-        string sqlconnectionstring =
-            configuration.GetConnectionString("AccountsDb");
 
-        using (MySqlConnection con = new MySqlConnection(sqlconnectionstring))
+        using (MySqlConnection con = await dataSource.OpenConnectionAsync())
         {
             try
             {

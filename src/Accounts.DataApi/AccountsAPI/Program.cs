@@ -7,6 +7,7 @@ using AccountsAPI.Presentation.ExceptionHandling;
 using AccountsAPI.Presentation.Models;
 using AccountsAPI.Presentation.Models.Authentication;
 using Microsoft.AspNetCore.Mvc;
+using MySqlConnector;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,6 +55,10 @@ builder.Services.AddControllers()
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+builder.Services.AddMySqlDataSource(
+    builder.Configuration.GetConnectionString("AccountsDb")
+    ?? throw new InvalidOperationException("Missing connection string: AccountsDb"));
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
