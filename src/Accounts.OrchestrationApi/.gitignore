@@ -13,3 +13,4 @@ appsettings.Development.json
 
 # Rider / ReSharper user settings
 *.DotSettings.user
+*.DS_Store
