@@ -93,7 +93,7 @@ builder.Services.AddHttpClient<IExternalAccountsClient, ExternalAccountsClient>(
 
 var app = builder.Build();
 app.UseExceptionHandler();
-app.MapControllers();
+app.MapControllers().RequireAuthorization("RequireApiKey");
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
