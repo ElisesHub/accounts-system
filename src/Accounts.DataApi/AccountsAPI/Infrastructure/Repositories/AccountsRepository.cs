@@ -5,63 +5,61 @@ using MySqlConnector;
 
 namespace AccountsAPI.Infrastructure.Repositories;
 
-public class AccountsRepository(MySqlDataSource dataSource) : IAccountsRepository
+public class AccountsRepository(MySqlDataSource dataSource)
+    : IAccountsRepository
 {
     public async Task<Account?> GetAccountAsync(string accountId)
     {
         Account account = new Account();
-
-        using (MySqlConnection con = await dataSource.OpenConnectionAsync())
+        try
         {
+            await using MySqlConnection con =
+                await dataSource.OpenConnectionAsync();
 
-            try
+            await using MySqlCommand cmd = new MySqlCommand("GetAccount", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("p_id", accountId);
+
+            await using MySqlDataReader reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
             {
-                await con.OpenAsync();
-
-                using (MySqlCommand cmd = new MySqlCommand("GetAccount", con))
+                if (reader["id"] != DBNull.Value)
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("p_id", accountId);
-                    using (MySqlDataReader reader = await cmd.ExecuteReaderAsync())
-                    {
-                        while (await reader.ReadAsync())
-                        {
-                            if (reader["id"] != DBNull.Value)
-                            {
-                                account.Id = AccountId.From((int)reader["id"]);
-                            }
+                    account.Id = AccountId.From((int)reader["id"]);
+                }
 
-                            if (reader["firstname"] != DBNull.Value)
-                            {
-                                account.FirstName = reader["firstname"].ToString();
-                            }
+                if (reader["firstname"] != DBNull.Value)
+                {
+                    account.FirstName =
+                        reader["firstname"].ToString();
+                }
 
-                            if (reader["lastname"] != DBNull.Value)
-                            {
-                                account.LastName = reader["lastname"].ToString();
-                            }
+                if (reader["lastname"] != DBNull.Value)
+                {
+                    account.LastName =
+                        reader["lastname"].ToString();
+                }
 
-                            if (reader["currentBalance"] != DBNull.Value)
-                            {
-                                account.Balance = Convert.ToDecimal(reader["currentBalance"]);
-                            }
+                if (reader["currentBalance"] != DBNull.Value)
+                {
+                    account.Balance =
+                        Convert.ToDecimal(reader["currentBalance"]);
+                }
 
-                            if (reader["overdraftLimit"] != DBNull.Value)
-                            {
-                                account.OverdraftLimit = Convert.ToDecimal(reader["overdraftLimit"]);
-                            }
-
-
-                        }
-                    }
+                if (reader["overdraftLimit"] != DBNull.Value)
+                {
+                    account.OverdraftLimit =
+                        Convert.ToDecimal(reader["overdraftLimit"]);
                 }
             }
-            catch (Exception e)
-            {
-                //TODO: Log this
-                throw;
-            }
         }
+        catch (Exception e)
+        {
+            //TODO: Log this
+            throw;
+        }
+
 
         return account;
     }
@@ -70,58 +68,53 @@ public class AccountsRepository(MySqlDataSource dataSource) : IAccountsRepositor
     {
         List<Account> list = new List<Account>();
 
-
-        using (MySqlConnection con = await dataSource.OpenConnectionAsync())
+        try
         {
-            try
-            {
-                await con.OpenAsync();
+            await using MySqlConnection con =
+                await dataSource.OpenConnectionAsync();
 
-                using (MySqlCommand cmd = new MySqlCommand("GetAccounts", con))
+            await using MySqlCommand cmd = new MySqlCommand("GetAccounts", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            await using MySqlDataReader reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                Account account = new Account();
+
+                if (reader["id"] != DBNull.Value)
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    using (MySqlDataReader reader = await cmd.ExecuteReaderAsync())
-                    {
-                        while (await reader.ReadAsync())
-                        {
-                            Account account = new Account();
-
-                            if (reader["id"] != DBNull.Value)
-                            {
-                                account.Id = AccountId.From((int)reader["id"]);
-                            }
-
-                            if (reader["firstname"] != DBNull.Value)
-                            {
-                                account.FirstName = reader["firstname"].ToString();
-                            }
-
-                            if (reader["lastname"] != DBNull.Value)
-                            {
-                                account.LastName = reader["lastname"]?.ToString();
-                            }
-
-                            if (reader["currentBalance"] != DBNull.Value)
-                            {
-                                account.Balance = Convert.ToDecimal(reader["currentBalance"]);
-                            }
-
-                            if (reader["overdraftLimit"] != DBNull.Value)
-                            {
-                                account.OverdraftLimit = Convert.ToDecimal(reader["overdraftLimit"]);
-                            }
-
-                            list.Add(account);
-                        }
-                    }
+                    account.Id = AccountId.From((int)reader["id"]);
                 }
+
+                if (reader["firstname"] != DBNull.Value)
+                {
+                    account.FirstName = reader["firstname"].ToString();
+                }
+
+                if (reader["lastname"] != DBNull.Value)
+                {
+                    account.LastName = reader["lastname"]?.ToString();
+                }
+
+                if (reader["currentBalance"] != DBNull.Value)
+                {
+                    account.Balance =
+                        Convert.ToDecimal(reader["currentBalance"]);
+                }
+
+                if (reader["overdraftLimit"] != DBNull.Value)
+                {
+                    account.OverdraftLimit =
+                        Convert.ToDecimal(reader["overdraftLimit"]);
+                }
+
+                list.Add(account);
             }
-            catch (Exception e)
-            {
-                //TODO: add logging
-                throw;
-            }
+        }
+        catch (Exception e)
+        {
+            //TODO: add logging
+            throw;
         }
 
         return list;
