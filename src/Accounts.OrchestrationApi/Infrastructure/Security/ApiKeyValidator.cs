@@ -1,8 +1,10 @@
+using Microsoft.Extensions.Options;
 using PortfolioApplicationAPI.Application.Interfaces;
+using PortfolioApplicationAPI.Infrastructure.Security.ApiKeys;
 
 namespace PortfolioApplicationAPI.Infrastructure.Security;
 
-public class ApiKeyValidator(IConfiguration configuration) : IApiKeyValidator
+public class ApiKeyValidator(IOptions<ApiKeyOptions> options) : IApiKeyValidator
 {
     public bool IsValid(string incomingKey)
     {
@@ -11,7 +13,7 @@ public class ApiKeyValidator(IConfiguration configuration) : IApiKeyValidator
             return false;
         }
 
-        var storedKey = configuration.GetValue<string>("AppAPIKey");
+        var storedKey = GetApiKey();
         if (string.IsNullOrWhiteSpace(storedKey))
         {
             throw new Exception("Key is not set in configuration.");
@@ -30,5 +32,22 @@ public class ApiKeyValidator(IConfiguration configuration) : IApiKeyValidator
         }
 
         return true;
+    }
+
+    private string GetApiKey()
+    {
+        if (options?.Value is null)
+        {
+            throw new InvalidOperationException("ApiKeyOptions not configured.");
+        }
+        var key = options?.Value?.AccountsApplicationApiKey;
+
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            throw new InvalidOperationException("Outgoing key not found.");
+        }
+
+        return key;
+
     }
 }

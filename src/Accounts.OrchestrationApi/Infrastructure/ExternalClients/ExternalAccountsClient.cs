@@ -2,8 +2,10 @@ using System.Net;
 using System.Text.Json;
 using AccountsApplicationAPI.Application.Interfaces;
 using FluentResults;
+using Microsoft.Extensions.Options;
 using PortfolioApplicationAPI.Domain.Entities;
 using PortfolioApplicationAPI.Infrastructure.Dtos;
+using PortfolioApplicationAPI.Infrastructure.Security.ApiKeys;
 
 namespace PortfolioApplicationAPI.Infrastructure.ExternalClients;
 
@@ -13,7 +15,7 @@ namespace PortfolioApplicationAPI.Infrastructure.ExternalClients;
 /// </summary>
 public class ExternalAccountsClient(
     HttpClient httpClient,
-    IConfiguration configuration) : IExternalAccountsClient
+    IOptions<ApiKeyOptions> options) : IExternalAccountsClient
 {
     private const string AccountsUrl = "api/accounts";
 
@@ -131,8 +133,18 @@ public class ExternalAccountsClient(
     /// <exception cref="Exception">Thrown if the outgoing key is not found or is null/empty.</exception>
     private string GetOutgoingKey()
     {
-        var outgoingKey = configuration["OutgoingAccountsAPIKey"] ?? throw new Exception("Outgoing Key not found");
-        if (string.IsNullOrEmpty(outgoingKey)) throw new Exception("Outgoing Key not found");
-        return outgoingKey;
+        if (options?.Value is null)
+        {
+            throw new InvalidOperationException("ApiKeyOptions not configured.");
+        }
+        var key = options?.Value?.AccountsApiKey;
+
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            throw new InvalidOperationException("Outgoing key not found.");
+        }
+
+        return key;
+
     }
 }

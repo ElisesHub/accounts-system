@@ -1,16 +1,29 @@
 using AccountsAPI.Services;
 using AccountsApplicationAPI.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using PortfolioApplicationAPI.Application.Interfaces;
 using PortfolioApplicationAPI.Infrastructure.ExternalClients;
+using PortfolioApplicationAPI.Infrastructure.ExternalClients.Configuration;
 using PortfolioApplicationAPI.Infrastructure.Security;
+using PortfolioApplicationAPI.Infrastructure.Security.ApiKeys;
 using PortfolioApplicationAPI.Presentation.Authentication;
 using PortfolioApplicationAPI.Presentation.ExceptionHandling;
 using PortfolioApplicationAPI.Presentation.Models;
 using PortfolioApplicationAPI.Presentation.Models.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddScoped<IApiKeyValidator, ApiKeyValidator>();
+
+
+builder.Services.AddOptions<ApiKeyOptions>()
+    .Bind(builder.Configuration)
+    .Validate(options => !string.IsNullOrWhiteSpace(options.AccountsApiKey) && !string.IsNullOrWhiteSpace(options.AccountsApplicationApiKey), "Some API keys are missing")
+    .ValidateOnStart();
+builder.Services.AddOptions<ExternalApiOptions>()
+    .Bind(builder.Configuration.GetSection(ExternalApiOptions.SectionName))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.BaseUrl), "External API base URL is missing")
+    .Validate(options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _), "External API base URL is not valid")
+    .ValidateOnStart();
 
 builder.Services
     .AddAuthentication(ApiKeyAuthenticationOptions.SchemeName)
@@ -59,9 +72,19 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IAccountsService, AccountsService>();
 builder.Services.AddScoped<IApiKeyValidator, ApiKeyValidator>();
-builder.Services.AddHttpClient<IExternalAccountsClient, ExternalAccountsClient>(client =>
+builder.Services.AddHttpClient<IExternalAccountsClient, ExternalAccountsClient>((serviceProvider, client) =>
 {
-    client.BaseAddress = new Uri("http://localhost:5253");
+    var options = serviceProvider
+        .GetRequiredService<IOptions<ExternalApiOptions>>()
+        .Value;
+
+    if (!Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out var baseUri))
+    {
+        throw new InvalidOperationException(
+            $"ExternalApi:BaseUrl must be a valid absolute URI. Current value: '{options.BaseUrl}'.");
+    }
+
+    client.BaseAddress = baseUri;
 });
 
 var app = builder.Build();
@@ -74,7 +97,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 
 
