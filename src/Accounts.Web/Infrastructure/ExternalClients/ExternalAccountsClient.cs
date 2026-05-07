@@ -1,10 +1,13 @@
 using System.Net;
+using System.Text.Json;
+using Microsoft.Extensions.Options;
 using PortfolioFe.Application.Interfaces;
 using PortfolioFe.Domain.Bank;
+using PortfolioFe.Infrastructure.Security;
 
 namespace PortfolioFe.Infrastructure.ExternalClients;
 
-public class ExternalAccountsClient(HttpClient httpClient, IConfiguration configuration) : IExternalAccountsClient
+public class ExternalAccountsClient(HttpClient httpClient, IOptions<ApiKeyOptions> options) : IExternalAccountsClient
 {
     private const string AccountsUrl = "api/accounts";
 
@@ -94,8 +97,18 @@ public class ExternalAccountsClient(HttpClient httpClient, IConfiguration config
     /// <exception cref="Exception">Thrown if the outgoing key is not found or is null/empty.</exception>
     private string GetOutgoingKey()
     {
-        var outgoingKey = configuration["OutgoingAppAPIKey"] ?? throw new Exception("Outgoing Key not found");
-        if (string.IsNullOrEmpty(outgoingKey)) throw new Exception("Outgoing Key not found");
-        return outgoingKey;
+        if (options?.Value is null)
+        {
+            throw new InvalidOperationException("ApiKeyOptions not configured.");
+        }
+        var key = options?.Value?.AccountsApplicationApiKey;
+
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            throw new InvalidOperationException("Outgoing key not found.");
+        }
+
+        return key;
+
     }
 }
