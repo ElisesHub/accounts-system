@@ -25,16 +25,16 @@
             @* </p> *@
 
             <p class="card-text">
-                <strong>Balance:</strong> @Model.Balance.ToString("C")
+                <strong>Balance:</strong> @Model.Balance.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))
             </p>
 
             <p class="card-text">
-                <strong>Overdraft Limit:</strong> @(Model.OverdraftLimit.ToString("C"))
+                <strong>Overdraft Limit:</strong> @(Model.OverdraftLimit.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")))
             </p>
 
             <p class="card-text">
                 <strong>Available Funds:</strong>
-                @((Model.Balance + Model.OverdraftLimit).ToString("C"))
+                @((Model.Balance + Model.OverdraftLimit).ToString("C", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")))
             </p>
         }
     </div>
