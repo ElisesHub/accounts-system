@@ -22,7 +22,7 @@ public class AccountsController(IAccountsService accountsService) : Controller
     [Route("/bank/accounts/")]
     public async Task<IActionResult> GetAccounts()
     {
-      //  var accounts = await accountsService.GetAccountsAsync();
-        return View("~/Presentation/Views/Bank/AllAccountsPartial.cshtml", null);
+        var accounts = await accountsService.GetAccountsAsync();
+        return View("~/Presentation/Views/Bank/AllAccountsPartial.cshtml", accounts);
     }
 }
