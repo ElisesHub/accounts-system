@@ -1,14 +1,35 @@
 bin/
 obj/
 /packages/
+
+# IDE/editor
+.idea/
+*.DotSettings.user
 riderModule.iml
 /_ReSharper.Caches/
-*launchSettings.json
+.vs/
+.vscode/
 .DS_Store
-.idea
-appsettings.json
+
+# Local ASP.NET config/secrets
+*launchSettings.json
 appsettings.Development.json
-# JetBrains IDE
-.idea/
-# Rider / ReSharper user settings
-*.DotSettings.user
+appsettings.Production.json
+.env
+.env.*
+!.env.example
+
+# Docker/runtime secrets
+secrets/
+*.pem
+*.key
+*.pfx
+*.crt
+
+# Runtime data
+logs/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+uploads/
