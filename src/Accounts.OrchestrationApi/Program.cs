@@ -14,8 +14,8 @@ using PortfolioApplicationAPI.Presentation.Models.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Read Docker/container-mounted secrets from /run/secrets.
-// // Each file name becomes a configuration key; each file's contents become the value.
+// Loads Docker/container-mounted secrets from /run/secrets.
+// Each file name becomes a configuration key; each file's contents become the value.
 builder.Configuration.AddKeyPerFile(
     directoryPath: "/run/secrets",
     optional: true);
@@ -90,20 +90,20 @@ builder.Services.AddHttpClient<IExternalAccountsClient, ExternalAccountsClient>(
 
     client.BaseAddress = baseUri;
 });
-
+builder.Services.AddHealthChecks();
 var app = builder.Build();
 app.UseExceptionHandler();
-app.MapControllers().RequireAuthorization("RequireApiKey");
-// Configure the HTTP request pipeline.
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+app.MapHealthChecks("/health");
+app.MapControllers().RequireAuthorization("RequireApiKey");
+
 // app.UseHttpsRedirection();
-
-
 
 
 app.Run();
