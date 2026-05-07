@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using AccountsAPI.Infrastructure.Security;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace AccountsAPI.Tests.Infrastructure.Security;
@@ -22,17 +23,10 @@ public class ApiKeyValidatorTest
     [InlineData("sk_live_abc123", "sk_test_abc123", false)] // wrong prefix
     public void isValid_returns_expected_result(string incomingKey, string storedKey, bool expectedResult)
     {
-        // Arrange
-        var configData = new Dictionary<string, string>
-        {
-            ["AccountsAPIKey"] = storedKey
-        };
 
-        var configuration = new ConfigurationBuilder()
-        .AddInMemoryCollection(configData)
-        .Build();
+        var options = Options.Create(new ApiKeyOptions {AccountsApiKey = storedKey});
 
-        var validator = new ApiKeyValidator(configuration);
+        var validator = new ApiKeyValidator(options);
 
         // Act
         var result = validator.IsValid(incomingKey);
@@ -49,16 +43,9 @@ public class ApiKeyValidatorTest
     public void isValid_returns_expected_throws_exception(string incomingKey, string storedKey)
     {
         // Arrange
-        var configData = new Dictionary<string, string>
-        {
-            ["AccountsAPIKey"] = storedKey
-        };
+        var options = Options.Create(new ApiKeyOptions {AccountsApiKey = storedKey});
 
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(configData)
-            .Build();
-
-        var validator = new ApiKeyValidator(configuration);
+        var validator = new ApiKeyValidator(options);
 
         // Act and Assert
         var exception = Assert.Throws<Exception>(()=> validator.IsValid(incomingKey));

@@ -13,6 +13,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<IApiKeyValidator, ApiKeyValidator>();
 
+
+builder.Services.AddOptions<ApiKeyOptions>()
+    .Bind(builder.Configuration)
+    .Validate(options => !string.IsNullOrWhiteSpace(options.AccountsApiKey), "Some API keys are missing")
+    .ValidateOnStart();
+
 builder.Services
     .AddAuthentication(ApiKeyAuthenticationOptions.SchemeName)
     .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
