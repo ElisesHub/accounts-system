@@ -14,7 +14,11 @@ using PortfolioApplicationAPI.Presentation.Models.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
+// Read Docker/container-mounted secrets from /run/secrets.
+// // Each file name becomes a configuration key; each file's contents become the value.
+builder.Configuration.AddKeyPerFile(
+    directoryPath: "/run/secrets",
+    optional: true);
 builder.Services.AddOptions<ApiKeyOptions>()
     .Bind(builder.Configuration)
     .Validate(options => !string.IsNullOrWhiteSpace(options.AccountsApiKey) && !string.IsNullOrWhiteSpace(options.AccountsApplicationApiKey), "Some API keys are missing")
