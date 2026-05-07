@@ -1,4 +1,4 @@
-namespace WebApplication1.Models;
+namespace PortfolioFe.Domain;
 
 public class ErrorViewModel
 {
