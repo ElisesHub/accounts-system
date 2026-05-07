@@ -11,10 +11,8 @@ using MySqlConnector;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddScoped<IApiKeyValidator, ApiKeyValidator>();
-
-// Read Docker/container-mounted secrets from /run/secrets.
-// Each file name becomes a configuration key; each file's contents become the value.
+// Loads Docker/container-mounted secrets from /run/secrets.
+// Each file name becomes a configuration key, and each file's contents become the value.
 builder.Configuration.AddKeyPerFile(
     directoryPath: "/run/secrets",
     optional: true);
@@ -34,22 +32,22 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("RequireApiKey", policy =>
     {
-        policy.AuthenticationSchemes.Add(ApiKeyAuthenticationOptions
-            .SchemeName);
+        policy.AuthenticationSchemes.Add(ApiKeyAuthenticationOptions.SchemeName);
         policy.RequireAuthenticatedUser();
     });
 });
+
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
+        // Ensures automatic model validation failures use the API's standard error response shape.
         options.InvalidModelStateResponseFactory = context =>
         {
             var errors = context.ModelState
                 .Where(x => x.Value != null && x.Value.Errors.Count > 0)
                 .ToDictionary(
                     kvp => kvp.Key,
-                    kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage)
-                        .ToArray()
+                    kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
                 );
 
             var response = new ApiErrorResponse
@@ -73,29 +71,32 @@ var accountsDbConnectionString =
 
 builder.Services.AddMySqlDataSource(accountsDbConnectionString);
 
+// Reports the API as healthy only when it can connect to the Accounts database.
 builder.Services.AddHealthChecks()
     .AddMySql(accountsDbConnectionString);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddScoped<IAccountsRepository, AccountsRepository>();
 builder.Services.AddScoped<IAccountsService, AccountsService>();
 builder.Services.AddScoped<IApiKeyValidator, ApiKeyValidator>();
+
 var app = builder.Build();
+
 app.UseExceptionHandler();
-// Configure the HTTP request pipeline.
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-
+// Keep the health endpoint unauthenticated so Docker can check container health without an API key.
+app.MapHealthChecks("/health");
 
 app.MapControllers().RequireAuthorization("RequireApiKey");
+
 // app.UseHttpsRedirection();
 
-app.MapHealthChecks("/health");
 app.Run();
