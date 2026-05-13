@@ -8,7 +8,5 @@ riderModule.iml
 .idea/
 # Rider / ReSharper user settings
 *.DotSettings.user
-appsettings.json
-appsettings.Development.json
 .DS_Store
   .vs/
