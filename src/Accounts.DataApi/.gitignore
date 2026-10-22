@@ -1,0 +1,12 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+*launchSettings.json
+# JetBrains IDE
+.idea/
+# Rider / ReSharper user settings
+*.DotSettings.user
+.DS_Store
+  .vs/
