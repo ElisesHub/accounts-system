@@ -1,0 +1,35 @@
+bin/
+obj/
+/packages/
+
+# IDE/editor
+.idea/
+*.DotSettings.user
+riderModule.iml
+/_ReSharper.Caches/
+.vs/
+.vscode/
+.DS_Store
+
+# Local ASP.NET config/secrets
+*launchSettings.json
+appsettings.Development.json
+appsettings.Production.json
+.env
+.env.*
+!.env.example
+
+# Docker/runtime secrets
+secrets/
+*.pem
+*.key
+*.pfx
+*.crt
+
+# Runtime data
+logs/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+uploads/

@@ -1,0 +1,39 @@
+
+
+@model IEnumerable<PortfolioFe.Domain.Bank.Account>?
+
+<h2>Accounts</h2>
+
+<table class="table table-striped table-bordered">
+    <thead>
+    <tr>
+        <th>Id</th>
+        <th>First Name</th>
+        <th>Last Name</th>
+        <th>Actions </th>
+
+    </tr>
+    </thead>
+    <tbody>
+    @if (Model ==  null || !Model.Any())
+    {
+        <tr><td colspan="4">No accounts found</td></tr>
+    }
+    else
+    {
+        @foreach (var account in Model)
+        {
+            <tr>
+                <td>@account.Id</td>
+                <td>@account.FirstName</td>
+                <td>@account.LastName</td>
+                @* <td>@account.Email</td> *@
+                @* <td>@account.Balance.ToString("C")</td> *@
+                @* <td>@account.OverdraftLimit.ToString("C")</td> *@
+                @* <td>@((account.Balance + account.OverdraftLimit).ToString("C"))</td> *@
+                <td><a href=@($"/bank/account/{account.Id}")>View account details</a></td>
+            </tr>
+        }
+    }
+    </tbody>
+</table>
