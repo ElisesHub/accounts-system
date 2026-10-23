@@ -1,322 +1,160 @@
- 
 # Accounts System
 
-This project runs a multi-container accounts system using Docker Compose. The system is an extremely simple prototype.
+A multi-service accounts application built with ASP.NET Core and run with Docker Compose. It is a deliberately small prototype, used to demonstrate service separation, API key authentication between services, secrets management and containerised deployment.
 
-The system contains:
+## Architecture
 
-- `portfoliofe` — frontend application
-- `accountsapplicationapi` — application API
-- `accountsapi` — accounts/database API
-- `accountsdb` — MySQL 8.0 database
+```mermaid
+flowchart LR
+    Browser -->|HTTPS + Auth0| Web[Accounts Web<br/>Razor Pages / MVC]
+    Web -->|HTTP + API key| Orch[Orchestration API]
+    Orch -->|HTTP + API key| Data[Accounts Data API]
+    Data -->|MySqlConnector| DB[(MySQL 8.0)]
+```
 
-## Prerequisites
+Only the frontend is exposed outside Docker. Each service authenticates the one calling it with its own API key, and only the Data API can reach the database.
 
-Before running the project, install:
+| Service | Compose name | Role | Docs |
+|---|---|---|---|
+| Accounts Web | `web` | User interface and Auth0 sign-in | [README](src/Accounts.Web/README.md) |
+| Orchestration API | `orchestration-api` | Application-facing API, calls the Data API | [README](src/Accounts.OrchestrationApi/README.md) |
+| Accounts Data API | `data-api` | The only service with database access | [README](src/Accounts.DataApi/README.md) |
+| MySQL | `db` | Accounts database | — |
 
-- Docker
-- Docker Compose
-- Git
+## Technologies
 
-You will also need valid application secrets and environment variables.
+.NET 10, ASP.NET Core, Razor Pages, MVC, Clean Architecture, Domain-Driven Design, Auth0, MySQL 8.0, MySqlConnector, Docker Compose with Docker secrets, xUnit v3.
 
-## Clone the repository
+## Repository structure
+
+```text
+accounts-system/
+├── src/
+│   ├── Accounts.Web/                 Frontend
+│   ├── Accounts.OrchestrationApi/    Orchestration API
+│   └── Accounts.DataApi/             Data API and its tests
+├── mySQLDb/                          Database initialisation script
+├── secrets.example/                  Template for the secrets/ folder
+├── docker-compose.yaml
+└── AccountsSystem.slnx
+```
+
+## Quick start
+
+**Prerequisites:** Docker Desktop (or Docker Engine with Compose v2) and an Auth0 application.
+
+**1. Clone the repository**
 
 ```bash
-git clone <your-repository-url>
-cd <your-repository-folder>
-````
+git clone https://github.com/ElisesHub/accounts-system.git
+cd accounts-system
+```
 
-## Environment variables
-
-This project requires a `.env` file in the same directory as `docker-compose.yaml`.
-
-Create a `.env` file by copying the example file:
+**2. Create the secrets folder from the template**
 
 ```bash
-cp .env.example .env
+cp -r secrets.example secrets
 ```
 
-Then edit `.env` and replace the placeholder values.
+Replace every placeholder in `secrets/` with a real value. Each file contains only the value, with no quotes and no trailing newline.
 
-Example `.env` file:
+| File | Used by | Value |
+|---|---|---|
+| `AccountsApiKey.txt` | Orchestration API → Data API | Any strong random string |
+| `AccountsApplicationApiKey.txt` | Web → Orchestration API | Any strong random string |
+| `Auth0ClientId.txt` | Web | From your Auth0 application |
+| `Auth0ClientSecret.txt` | Web | From your Auth0 application |
+| `MySQLPassword.txt` | MySQL | Password for the `accounts_user` database user |
+| `MySQLRootPassword.txt` | MySQL | Password for the MySQL root user |
+| `AccountsDbConnectionString.txt` | Data API | Connection string using the `MySQLPassword.txt` password |
 
-```env
-AUTH0_DOMAIN=your-auth0-domain.example.com
-MYSQL_PASSWORD=change-me
-MYSQL_ROOT_PASSWORD=change-me-root
-```
-
-### Required environment variables
-
-| Variable              | Description                             |
-| --------------------- | --------------------------------------- |
-| `AUTH0_DOMAIN`        | Your Auth0 domain                       |
-| `MYSQL_PASSWORD`      | Password for the MySQL application user |
-| `MYSQL_ROOT_PASSWORD` | Root password for the MySQL container   |
-
-Do not commit your real `.env` file to Git.
-
-## Secrets
-
-This project uses Docker Compose secrets. The required secret files must exist locally inside a `secrets` folder.
-
-Create the `secrets` folder if it does not already exist:
+Generate the connection string from the password file, so the two always match:
 
 ```bash
-mkdir secrets
+printf 'Server=db;Port=3306;Database=AccountsDb;Uid=accounts_user;Pwd=%s;' "$(cat secrets/MySQLPassword.txt)" > secrets/AccountsDbConnectionString.txt
 ```
 
-Then create the following files:
+`secrets/` is ignored by git. Never commit it.
 
-```text
-secrets/AccountsApiKey.txt
-secrets/AccountsApplicationApiKey.txt
-secrets/Auth0ClientId.txt
-secrets/Auth0ClientSecret.txt
-```
+**3. Set your Auth0 domain**
 
-Each file should contain only the secret value.
+In `docker-compose.yaml`, set `Auth0__Domain` under the `web` service to your tenant domain. In your Auth0 application settings, add `http://localhost:1000/callback` to Allowed Callback URLs and `http://localhost:1000` to Allowed Logout URLs.
 
-Example:
-
-```text
-my-secret-value-here
-```
-
-Do not wrap the value in quotes.
-
-### Required secret files
-
-| File                                    | Description                                               |
-| --------------------------------------- | --------------------------------------------------------- |
-| `secrets/AccountsApiKey.txt`            | API key used by `accountsapi`                             |
-| `secrets/AccountsApplicationApiKey.txt` | API key used by `accountsapplicationapi` and the frontend |
-| `secrets/Auth0ClientId.txt`             | Auth0 client ID                                           |
-| `secrets/Auth0ClientSecret.txt`         | Auth0 client secret                                       |
-
-Do not commit real secret files to Git.
-
-## Example secret files
-
-The repository includes example files:
-
-```text
-secrets.example/AccountsApiKey.txt
-secrets.example/AccountsApplicationApiKey.txt
-secrets.example/Auth0ClientId.txt
-secrets.example/Auth0ClientSecret.txt
-```
-
-Copy them to the required filenames:
+**4. Build and start**
 
 ```bash
-cp secrets.example/AccountsApiKey.txt secrets/AccountsApiKey.txt
-cp secrets.example/AccountsApplicationApiKey.txt secrets/AccountsApplicationApiKey.txt
-cp secrets.example/Auth0ClientId.txt secrets/Auth0ClientId.txt
-cp secrets.example/Auth0ClientSecret.txt secrets/Auth0ClientSecret.txt
+docker compose up --build
 ```
 
-Then replace the dummy values with real values.
+Open **http://localhost:1000**.
 
-## Database initialization
+## Everyday commands
 
-The MySQL container uses this SQL dump file on the first startup:
+| Task | Command |
+|---|---|
+| Start in the background | `docker compose up --build -d` |
+| Follow all logs | `docker compose logs -f` |
+| Follow one service | `docker compose logs -f data-api` |
+| Check status | `docker compose ps` |
+| Stop | `docker compose down` |
+| Stop and delete the database | `docker compose down -v` |
 
-```text
-./mySQLDb/accountsdb_dump_v1.sql
-```
+## Database
 
-This file is mounted into the MySQL container at:
-
-```text
-/docker-entrypoint-initdb.d/accountsdb_dump_v1.sql
-```
-
-MySQL only runs initialization scripts when the database volume is first created.
-
-If the database volume already exists, the SQL dump will not be re-imported automatically.
-
-To reset the database and re-run the SQL initialization script:
+On first start, MySQL creates `AccountsDb` and `accounts_user`, then runs `mySQLDb/accountsdb_dump_v1.sql`. This runs **only when the volume is first created**. To re-run it after changing the script, or after changing `MySQLPassword.txt`:
 
 ```bash
 docker compose down -v
-docker compose up -d
+docker compose up --build
 ```
 
-Warning: `docker compose down -v` deletes the MySQL volume and all database data.
+`down -v` deletes all database data.
 
-## Running the application
+## Local development without Docker
 
-After creating the `.env` file and required secret files, run:
+Each service can run with `dotnet run` or from Rider using its launch profile. Non-secret settings are in each project's `appsettings.Development.json`, and secrets in .NET user secrets. See each service's README.
+
+| Service | Local URL |
+|---|---|
+| Accounts Web | http://localhost:5236 |
+| Orchestration API | http://localhost:5182 |
+| Accounts Data API | http://localhost:5253 |
+
+Open `AccountsSystem.slnx` to work on all projects together.
+
+## Tests
 
 ```bash
-docker compose up -d
+dotnet test
 ```
 
-This will start all services in detached mode.
+## Design notes
 
-To view logs:
+- **One responsibility per service.** The frontend never sees the database, and only the Data API holds database credentials.
+- **Service-to-service authentication.** Each API validates an `x-api-key` header, with a separate key per hop.
+- **Secrets as files, not environment variables.** Passwords and keys are Docker secrets mounted under `/run/secrets`, so they don't appear in `docker inspect` or process environments. The .NET services read them through the key-per-file configuration provider.
+- **Fail fast on configuration.** Every service validates its required settings at startup.
+- **Least privilege in the database.** The Data API connects as `accounts_user`, not root.
 
-```bash
-docker compose logs -f
-```
+## Planned improvements
 
-To view logs for a specific service:
+- Switch the Orchestration → Data API call to gRPC, with a shared `.proto` contract
+- Run the integration tests against a disposable MySQL container with Testcontainers
+- Add a GitHub Actions pipeline for build and tests
+- Align project and namespace names with the `Accounts.*` folders
 
-```bash
-docker compose logs -f accountsapi
-docker compose logs -f accountsapplicationapi
-docker compose logs -f portfoliofe
-docker compose logs -f accountsdb
-```
+## Troubleshooting
 
-## Accessing the application
+**`bind source path does not exist: .../secrets/...`**: a secret file is missing or misnamed. Compare `ls secrets` with the table above. Names are case-sensitive.
 
-The frontend is exposed on port `1000`.
+**`Access denied for user 'accounts_user'`**: the password in `AccountsDbConnectionString.txt` doesn't match the one MySQL was initialised with. Regenerate the connection string with the `printf` command above. If `MySQLPassword.txt` changed after the first start, reset the volume.
 
-Open:
+**`Unable to connect to any of the specified MySQL hosts`**: the connection string must use `Server=db`, the compose service name, not `localhost`.
 
-```text
-http://localhost:1000
-```
+**`PROCEDURE AccountsDb.GetAccounts does not exist`**: the database was not initialised from the dump. Reset the volume.
 
-Internal services communicate using Docker Compose service names:
-
-```text
-portfoliofe -> accountsapplicationapi
-accountsapplicationapi -> accountsapi
-accountsapi -> accountsdb
-```
-
-The internal URLs are:
-
-```text
-http://accountsapplicationapi:8080
-http://accountsapi:8080
-accountsdb:3306
-```
-
-## Stopping the application
-
-To stop the containers:
-
-```bash
-docker compose down
-```
-
-To stop the containers and remove the database volume:
-
-```bash
-docker compose down -v
-```
-
-Use `-v` carefully because it deletes database data.
-
-## Pulling public Docker images
-
-This production Compose setup uses public Docker images.
-
-To pull the latest images:
-
-```bash
-docker compose pull
-```
-
-Then start or recreate the containers:
-
-```bash
-docker compose up -d
-```
-
-If containers are already running and you want to recreate them with the pulled images:
-
-```bash
-docker compose up -d --force-recreate
-```
-
- 
-
-## Health checks
-
-The MySQL service includes a healthcheck. The `accountsapi` service waits for MySQL to become healthy before starting.
-
-```yaml
-depends_on:
-  accountsdb:
-    condition: service_healthy
-```
-
- 
-## Common errors
-
-### Environment variable is not set
-
-Example:
-
-```text
-The "AUTH0_DOMAIN" variable is not set. Defaulting to a blank string.
-The "MYSQL_PASSWORD" variable is not set. Defaulting to a blank string.
-MYSQL_ROOT_PASSWORD is required
-```
-
-Fix: create a `.env` file in the same directory as `docker-compose.yml` and provide values:
-
-```env
-AUTH0_DOMAIN=your-auth0-domain.example.com
-MYSQL_PASSWORD=change-me
-MYSQL_ROOT_PASSWORD=change-me-root
-```
-
-### Secret file not found
-
-Example:
-
-```text
-secrets/AccountsApiKey.txt not found
-```
-
-Fix: create the missing file inside the `secrets` directory.
-
-```bash
-mkdir secrets
-touch secrets/AccountsApiKey.txt
-```
-
-Then add the real secret value to the file.
-
-### MySQL data does not reset
-
-If changes to the SQL dump are not appearing, the MySQL volume probably already exists.
-
-Reset the database volume:
-
-```bash
-docker compose down -v
-docker compose up -d
-```
-
-Warning: this deletes existing database data.
-
-## Suggested `.gitignore`
-
-Use a `.gitignore` like this to avoid committing real secrets:
-
-```gitignore
-.env
-
-secrets/AccountsApiKey.txt
-secrets/AccountsApplicationApiKey.txt
-secrets/Auth0ClientId.txt
-secrets/Auth0ClientSecret.txt
-
-mysql-data/
-```
+**A page shows an error**: follow the request through `docker compose logs web orchestration-api data-api` to find which service failed.
 
 ## Disclaimer
 
-This project is a simple prototype created for demonstration purposes only. It is provided “as is”, without any warranties or guarantees.
-
-The author is not responsible for any issues that may result from using, modifying, deploying, or distributing this project, including data loss, security issues, or service interruptions.
-
-This project is not intended to be used as-is in a production environment. Before any public or commercial deployment, review the security configuration, secret management, database setup, authentication flow, error handling, logging, and infrastructure settings.
+This project is a simple prototype created for demonstration purposes only. It is provided "as is", without warranty of any kind. It is not intended to be used as-is in production. Before any public or commercial deployment, review the security configuration, secrets management, database setup, authentication flow, error handling, logging and infrastructure settings.

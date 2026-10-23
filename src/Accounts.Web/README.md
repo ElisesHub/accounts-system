@@ -1,314 +1,109 @@
+# Accounts Web
 
-# Account System Frontend
-
-## Overview
-
-Portfolio Frontend is the user-facing web application for the accounts system. It renders the UI, handles Auth0 authentication, and communicates with the Accounts Application API through HTTP requests.
-
-The project follows Clean Architecture and Domain-Driven Design principles by separating presentation, application, domain, and infrastructure concerns.
-
-The frontend does not connect directly to the database. Account data is retrieved through the Accounts Application API.
-
-## Architecture
+The user-facing web application of the [accounts system](../../README.md). It renders the UI, handles sign-in with Auth0, and retrieves account data from the [Orchestration API](../Accounts.OrchestrationApi/README.md). It has no direct access to the other services' data or the database.
 
 ```text
-Portfolio Frontend
-        ↓ HTTP
-Accounts Application API
-        ↓ HTTP
-Accounts Database API
-        ↓
-MySQL Database
-````
+Browser  →  Accounts Web  →  Orchestration API  →  Accounts Data API  →  MySQL
+```
 
 ## Responsibilities
 
-This project is responsible for:
+- Render the user interface with Razor Pages and MVC views
+- Authenticate users with Auth0
+- Call the Orchestration API through a typed `HttpClient`, sending an API key
+- Display account data
+- Show user-facing error and status-code pages
 
-* Rendering the frontend user interface
-* Handling Auth0-based authentication
-* Calling the Accounts Application API through a typed HTTP client
-* Displaying account data returned by the backend
-* Handling user-facing errors and status-code pages
-* Keeping presentation, application, domain, and infrastructure concerns separated
-
-## Project Structure
+## Project structure
 
 ```text
-PortfolioFe
-├── Application
-├── Domain
-├── Infrastructure
-└── Presentation
+src/Accounts.Web/
+├── Domain/           Domain models and business rules
+├── Application/      Application services and interfaces
+├── Infrastructure/   HTTP client for the Orchestration API, configuration, security integrations
+├── Presentation/     Razor Pages, MVC controllers and views, routing
+└── wwwroot/          Static assets
 ```
 
-Typical responsibilities:
-
-* `Presentation` — Razor Pages, MVC controllers, views, routing, and UI concerns
-* `Application` — application services, interfaces, and use-case logic
-* `Domain` — domain models and business rules
-* `Infrastructure` — external HTTP clients, configuration, and security integrations
-
-
-## Technologies
-
-* .NET / ASP.NET Core
-* Razor Pages
-* MVC Controllers and Views
-* Clean Architecture
-* Domain-Driven Design
-* Auth0 authentication
-* Typed `HttpClient`
-* Docker / Docker Compose
-
-## Authentication
-
-The frontend uses Auth0 for web application authentication.
-
-The following configuration values are required:
-
-```text
-Auth0:Domain
-Auth0:ClientId
-Auth0:ClientSecret
-```
-
-If any of these values are missing, the application fails during startup.
-
-## Configuration and Secrets
-
-This repository does not contain runtime secrets or environment-specific configuration values.
-
-For local development, secrets should be managed with .NET user secrets. These values are stored outside the repository and are not committed to Git.
-
-When the application is run as part of the full accounts system, runtime configuration is provided by a separate deployment repository through Docker Compose.
-
-The frontend also supports container-mounted secrets through `/run/secrets` when they are provided by the runtime environment. This is optional and mainly intended for containerized deployments.
-
-## Required Local User Secrets
-
-The following .NET user secrets are required for local development:
-
-```text
-Auth0:Domain=
-Auth0:ClientSecret=
-Auth0:ClientId=
-AccountsApplicationApiKey=
-```
-
-Initialize user secrets from the frontend project directory:
-
-```bash
-dotnet user-secrets init
-```
-
-Set the required values:
-
-```bash
-dotnet user-secrets set "Auth0:Domain" "your-auth0-domain"
-dotnet user-secrets set "Auth0:ClientSecret" "your-auth0-client-secret"
-dotnet user-secrets set "Auth0:ClientId" "your-auth0-client-id"
-dotnet user-secrets set "AccountsApplicationApiKey" "your-accounts-application-api-key"
-```
-
-
-## External API Configuration
-
-The frontend communicates with the Accounts Application API through a typed HTTP client.
-
-The Accounts Application API base URL is configured through:
-
-```text
-ExternalApi:BaseUrl
-```
-
-When running through the separate deployment repository, this value is injected by Docker Compose and usually points to the Accounts Application API service name inside the Docker network.
-
-Example:
-
-```text
-http://accountsapplicationapi:8080
-```
-
-`ExternalApi:BaseUrl` must be a valid absolute URI.
-
-## API Key Configuration
-
-The frontend requires an API key when communicating with the Accounts Application API.
-
-Required configuration value:
-
-```text
-AccountsApplicationApiKey
-```
-
-The value should be provided through .NET user secrets during local development or injected by the deployment setup when running with Docker Compose.
-
-## Running Locally
-
-Restore dependencies:
-
-```bash
-dotnet restore
-```
-
-Run the frontend project:
-
-```bash
-dotnet run
-```
-
-If running from the solution root, provide the project path:
-
-```bash
-dotnet run --project path/to/PortfolioFe
-```
-
-The Accounts Application API must also be running and reachable through the configured `ExternalApi:BaseUrl`.
-
-## Running with Docker Compose
-
-This project is designed to be run as part of the full accounts system through a separate deployment repository.
-
-The deployment repository contains the `docker-compose.yaml` file used to start the frontend, the Accounts Application API, the Accounts Database API, and the MySQL database together.
-
-From the deployment repository, run:
-
-```bash
-docker compose up
-```
-
-The deployment repository is responsible for providing runtime configuration such as service URLs, API keys, Auth0 settings, environment variables, and Docker secrets.
-
-This frontend repository contains the application source code only. Runtime orchestration, service wiring, environment variables, and secrets are managed outside this repository.
-
-## Request Flow
-
-A typical account request follows this flow:
-
-```text
-User
-  ↓
-Portfolio Frontend
-  ↓
-IAccountsService
-  ↓
-IExternalAccountsClient
-  ↓
-Accounts Application API
-```
-
-The frontend registers the account application service:
+Requests flow Page or controller → `IAccountsService` → `IExternalAccountsClient` → Orchestration API:
 
 ```csharp
 builder.Services.AddScoped<IAccountsService, AccountsService>();
-```
-
-It also registers a typed HTTP client for communication with the Accounts Application API:
-
-```csharp
 builder.Services.AddHttpClient<IExternalAccountsClient, ExternalAccountsClient>();
 ```
 
-This keeps the frontend decoupled from the implementation details of the downstream HTTP integration.
+## Technologies
 
-## Error Handling
+ASP.NET Core (.NET 10), Razor Pages, MVC, Clean Architecture, Domain-Driven Design, Auth0, typed `HttpClient`.
 
-In non-development environments, the application uses a centralized exception handler:
+## Configuration
 
-```text
-/Error
+| Key | Purpose | Secret |
+|---|---|---|
+| `Auth0:Domain` | Auth0 tenant domain | No |
+| `Auth0:ClientId` | Auth0 application client ID | Yes |
+| `Auth0:ClientSecret` | Auth0 application client secret | Yes |
+| `AccountsApplicationApiKey` | Key sent to the Orchestration API | Yes |
+| `ExternalAccountsApi:BaseUrl` | Base URL of the Orchestration API, as an absolute URI | No |
+
+Startup fails if any value is missing or the base URL is not a valid absolute URI.
+
+**Local development**: non-secret values are in `appsettings.Development.json`:
+
+```json
+{
+  "ExternalAccountsApi": {
+    "BaseUrl": "http://localhost:5182"
+  },
+  "Auth0": {
+    "Domain": "your-tenant.eu.auth0.com"
+  }
+}
 ```
 
-Status-code responses such as 404, 403, and 500 are handled through:
+The secrets are .NET user secrets:
 
-```text
-/Error/StatusCode?code={statusCode}
+```bash
+cd src/Accounts.Web
+dotnet user-secrets set "Auth0:ClientId" "your-auth0-client-id"
+dotnet user-secrets set "Auth0:ClientSecret" "your-auth0-client-secret"
+dotnet user-secrets set "AccountsApplicationApiKey" "your-accounts-application-api-key"
 ```
 
-The request pipeline includes:
+**In Docker**, the client ID, client secret and API key are Docker secrets mounted under `/run/secrets`. The domain and base URL are set in `docker-compose.yaml`:
 
-```text
-Static Files
-Routing
-Authentication
-Authorization
-Razor Pages
-MVC Controller Routes
+```yaml
+Auth0__Domain: your-tenant.eu.auth0.com
+ExternalAccountsApi__BaseUrl: "http://orchestration-api:8080"
 ```
 
-## Configuration Validation
+## Auth0 setup
 
-The application validates required configuration at startup.
+In the Auth0 application settings, register the URLs the app runs on:
 
-Startup fails if:
+| Setting | Docker Compose | `dotnet run` |
+|---|---|---|
+| Allowed Callback URLs | `http://localhost:1000/callback` | `http://localhost:5236/callback` |
+| Allowed Logout URLs | `http://localhost:1000` | `http://localhost:5236` |
 
-* `Auth0:Domain` is missing
-* `Auth0:ClientId` is missing
-* `Auth0:ClientSecret` is missing
-* `AccountsApplicationApiKey` is missing
-* `ExternalApi:BaseUrl` is missing
-* `ExternalApi:BaseUrl` is not a valid absolute URI
+## Error handling
 
-This helps detect configuration problems before the application starts serving requests.
+Outside Development, unhandled exceptions are shown on `/Error`, and status codes such as 403, 404 and 500 on `/Error/StatusCode?code={statusCode}`. The `httpProd` launch profile runs the app locally as Production, to check these pages without Docker.
+
+## Running locally
+
+With the Orchestration API running on `http://localhost:5182`:
+
+```bash
+dotnet run --project src/Accounts.Web
+```
+
+The app is available at `http://localhost:5236`. To run the whole system, use Docker Compose from the repository root, and the app is then at `http://localhost:1000`. See the [root README](../../README.md).
 
 ## Troubleshooting
 
-### The frontend cannot retrieve accounts
+**Startup fails**: check all five configuration values are set and the base URL is an absolute URI.
 
-Check that:
+**Accounts cannot be retrieved**: check the Orchestration API is running, that `ExternalAccountsApi:BaseUrl` points to it, and that `AccountsApplicationApiKey` matches the key it expects. In Docker, check `docker compose logs orchestration-api` and `docker compose logs data-api` to see where the request failed.
 
-* The Accounts Application API is running
-* `ExternalApi:BaseUrl` points to the correct service
-* The required API key is configured
-* The frontend can reach the Accounts Application API over HTTP
-* The Accounts Application API can reach its own downstream services
-
-### The application fails on startup
-
-Check that all required configuration values are present:
-
-```text
-Auth0:Domain
-Auth0:ClientId
-Auth0:ClientSecret
-AccountsApplicationApiKey
-ExternalApi:BaseUrl
-```
-
-Also check that `ExternalApi:BaseUrl` is a valid absolute URI.
-
-### Auth0 login does not work
-
-Check that:
-
-* The Auth0 domain is correct
-* The client ID and client secret are correct
-* The callback URL is configured correctly in Auth0
-* The logout URL is configured correctly in Auth0
-* The application is running on the expected host and port
-
-## Security Notes
-
-Secrets are not stored in this repository.
-
-Do not commit:
-
-* Auth0 client secrets
-* API keys
-* Environment-specific credentials
-* Production configuration values
-* Local user-secrets files
-* Generated secret files
-
-For local development, use .NET user secrets.
-
-For containerized execution, required values are injected by the deployment setup through Docker Compose.
-
-## Disclaimer
-
-This project is a simple prototype created for demonstration purposes only. It is provided "as is", without warranty of any kind.
-
-The author is not responsible for any issues that may result from the use, modification, deployment, or distribution of this project, including data loss, security issues, or service interruptions.
-
-This project is not intended to be used as-is in a production environment. Before any public or commercial deployment, review the security configuration, secrets management, database configuration, authentication flow, error handling, logs, and infrastructure settings.
+**Auth0 login fails**: check the domain, client ID and secret, and that the callback and logout URLs registered in Auth0 match the host and port the app runs on.

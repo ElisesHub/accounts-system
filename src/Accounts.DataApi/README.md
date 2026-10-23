@@ -1,535 +1,125 @@
+# Accounts Data API
 
-# Accounts API (Part Three)
-
-## Overview
-
-Accounts API is the database-facing API for the accounts system. It exposes account-related HTTP endpoints and retrieves account data from a MySQL database.
-
-This service sits behind the Accounts Application API and is responsible for direct database access.
-
-The frontend and Accounts Application API do not connect directly to MySQL. Database access is isolated in this API.
-
-## Architecture
+The database-facing service of the [accounts system](../../README.md). It is the only component that connects to MySQL; the Orchestration API calls it over HTTP with an API key.
 
 ```text
-Portfolio Frontend
-        ↓ HTTP + API Key
-Accounts Application API
-        ↓ HTTP + API Key
-Accounts API
-        ↓ MySQL connection
-MySQL Database
-````
+Orchestration API  →  Accounts Data API  →  MySQL
+```
 
 ## Responsibilities
 
-This project is responsible for:
+- Expose account endpoints to the Orchestration API
+- Authenticate requests with an API key
+- Run account queries against the MySQL `AccountsDb` database
+- Return validation errors in a consistent format
+- Handle unexpected exceptions through a global exception handler
+- Provide a database-aware health check
 
-* Exposing account-related HTTP endpoints to the Accounts Application API
-* Authenticating requests using API key authentication
-* Connecting to the MySQL accounts database
-* Executing account-related database operations
-* Returning account data to the Accounts Application API (and any subsequent APIs which may use it)
-* Handling validation errors in a consistent response format
-* Handling unexpected exceptions through a global exception handler
-* Providing a database-aware health check endpoint
-
-## Project Structure
+## Project structure
 
 ```text
-AccountsAPI
-├── Application
-├── Domain
-├── Infrastructure
-└── Presentation
+src/Accounts.DataApi/
+├── AccountsAPI/
+│   ├── Domain/           Account domain models and business rules
+│   ├── Application/      Service interfaces and application services
+│   ├── Infrastructure/   MySQL repositories, API key validation, configuration
+│   └── Presentation/     Controllers, authentication, error handling, request/response models
+└── AccountsAPI.Tests/
+    ├── UnitTests/
+    └── IntegrationTests/
 ```
 
-Typical responsibilities:
-
-* `Domain` — core account-related domain models and business rules
-* `Application` — service interfaces, application services, and use-case orchestration
-* `Infrastructure` — MySQL repositories, database access, API key validation, and configuration
-* `Presentation` — API controllers, authentication setup, authorization policies, error responses, exception handling, and request/response models
+Requests flow Controller → `IAccountsService` → `IAccountsRepository` → MySQL, keeping controllers free of application and data-access logic.
 
 ## Technologies
 
-* .NET / ASP.NET Core Web API
-* Clean Architecture
-* Domain-Driven Design
-* MySQL
-* MySqlConnector
-* API key authentication
-* Swagger / OpenAPI
-* Health checks
-* Docker / Docker Compose
+ASP.NET Core Web API (.NET 10), Clean Architecture, Domain-Driven Design, MySQL with MySqlConnector, API key authentication, OpenAPI/Swagger, health checks, xUnit v3, Moq, FluentAssertions.
 
 ## Authentication
 
-The Accounts API uses API key authentication.
-
-Requests must include the API key in the following HTTP header:
-
-```text
-x-api-key
-```
-
-All mapped controllers require the `RequireApiKey` authorization policy.
+Every controller requires the `RequireApiKey` policy:
 
 ```csharp
 app.MapControllers().RequireAuthorization("RequireApiKey");
 ```
 
-If the API key is missing or invalid, the request is rejected before reaching the controller action.
+Requests must send the key in the `x-api-key` header. Missing or invalid keys are rejected before reaching the controller. `GET /health` is unauthenticated so Docker can check container health.
 
-The health check endpoint does not require authentication so Docker can check container health without an API key.
+## Configuration
 
-```http
-GET /health
-```
+| Key | Purpose |
+|---|---|
+| `ConnectionStrings:AccountsDb` | MySQL connection string |
+| `AccountsApiKey` | Key expected from the Orchestration API |
 
-## Configuration and Secrets
+The API fails at startup if either is missing.
 
-This repository does not contain runtime secrets, API keys, or database connection strings.
-
-For local development, sensitive configuration values are managed with .NET user secrets. These values are stored outside the repository and are not committed to Git.
-
-When the application is run as part of the full accounts system, secret values are provided by a separate deployment repository through Docker Compose.
-
-The application also supports container-mounted secrets through `/run/secrets` when they are provided by the runtime environment. This is optional and mainly intended for containerized deployments.
-
-## Required Local User Secrets
-
-The following .NET user secrets are required for local development:
-
-```text
-ConnectionStrings:AccountsDb=
-AccountsApiKey=
-```
-
-Initialize user secrets from the Accounts API project directory:
+**Local development** uses .NET user secrets:
 
 ```bash
-dotnet user-secrets init
-```
-
-Set the required values:
-
-```bash
-dotnet user-secrets set "ConnectionStrings:AccountsDb" "Server=server;Database=dbname;Uid=userName;Pwd=yourpassword;"
+cd src/Accounts.DataApi/AccountsAPI
+dotnet user-secrets set "ConnectionStrings:AccountsDb" "Server=localhost;Port=3306;Database=AccountsDb;Uid=accounts_user;Pwd=yourpassword;"
 dotnet user-secrets set "AccountsApiKey" "your-accounts-api-key"
 ```
 
-Example local connection string:
-
-```text
-Server=localhost;Port=3306;Database=AccountsDb;Uid=accounts_user;Pwd=yourpassword;
-```
-
-Do not commit real API keys, database usernames, passwords, or database connection strings to source control.
-
-## API Key Configuration
-
-The Accounts API requires one API key value:
-
-```text
-AccountsApiKey
-```
-
-`AccountsApiKey` is used to validate incoming requests from the Accounts Application API.
-
-If this value is missing, the application fails during startup.
-
-## Database Configuration
-
-The API connects to MySQL using the `AccountsDb` connection string:
-
-```text
-ConnectionStrings:AccountsDb
-```
-
-The connection string is loaded from .NET user secrets during local development.
-
-The application reads the connection string using:
+**In Docker**, both values are Docker secrets mounted under `/run/secrets` and read by the key-per-file configuration provider. The connection string secret is mounted with the target name `ConnectionStrings:AccountsDb`, so the code reads it exactly as it does locally:
 
 ```csharp
 builder.Configuration.GetConnectionString("AccountsDb")
 ```
 
-The connection string is registered with MySqlConnector:
+See the [root README](../../README.md) for setting up the `secrets/` folder.
 
-```csharp
-builder.Services.AddMySqlDataSource(accountsDbConnectionString);
-```
+## Database
 
-The same connection string is also used by the health check:
+The API expects the `AccountsDb` schema, including its stored procedures, to exist. In Docker it is created from `mySQLDb/accountsdb_dump_v1.sql` the first time the database volume is created.
 
-```csharp
-builder.Services.AddHealthChecks()
-    .AddMySql(accountsDbConnectionString);
-```
+## Endpoints
 
-The API fails during startup if `ConnectionStrings:AccountsDb` is missing.
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/health` | None | Checks the API can reach the database |
+| GET | `/api/accounts` | API key | Returns all accounts |
 
-## Database Requirements
+Swagger UI is enabled in the Development environment only.
 
-The MySQL database must exist and contain the schema expected by the API.
+## Error responses
 
-Expected database:
-
-```text
-AccountsDb
-```
-
-The database should be initialized by the deployment setup using the required SQL seed or dump file.
-
-The API may depend on stored procedures, tables, and seed data being present in the database. If the database is not initialized correctly, account endpoints may fail even if the API starts successfully.
-
-## API Endpoints
-
-### Health Check
-
-```http
-GET /health
-```
-
-Returns the health status of the service.
-
-This endpoint checks whether the API can connect to the Accounts database.
-
-It is intentionally unauthenticated so Docker can use it for container health checks.
-
-### Accounts
-
-The service exposes account-related endpoints through its controllers.
-
-Expected account endpoint:
-
-```http
-GET /api/accounts
-```
-
-This endpoint retrieves account data from the MySQL database through the repository layer.
-
-## Request Flow
-
-A typical request follows this flow:
-
-```text
-Accounts Application API
-  ↓
-x-api-key validation
-  ↓
-Accounts API Controller
-  ↓
-IAccountsService
-  ↓
-IAccountsRepository
-  ↓
-MySQL Database
-```
-
-The application registers the account service:
-
-```csharp
-builder.Services.AddScoped<IAccountsService, AccountsService>();
-```
-
-It also registers the account repository:
-
-```csharp
-builder.Services.AddScoped<IAccountsRepository, AccountsRepository>();
-```
-
-This keeps controller logic separated from application logic and database access.
-
-## Error Handling
-
-The application uses a global exception handler:
-
-```csharp
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-app.UseExceptionHandler();
-```
-
-Unexpected errors are handled centrally and returned using a consistent API error response format.
-
-## Validation Errors
-
-Invalid model state responses are customized.
-
-Validation errors return a structured response containing:
-
-```text
-Code
-Message
-FieldErrors
-TraceId
-```
-
-Example validation error shape:
+Validation errors return:
 
 ```json
 {
   "code": "ValidationError",
   "message": "One or more validation errors occurred.",
-  "fieldErrors": {
-    "fieldName": [
-      "Validation error message"
-    ]
-  },
+  "fieldErrors": { "fieldName": ["Validation error message"] },
   "traceId": "request-trace-id"
 }
 ```
 
-## Swagger
+Unexpected exceptions are handled by `GlobalExceptionHandler` and returned in the same format.
 
-Swagger is enabled only in development environments.
+## Running locally
 
-When running in development, Swagger UI is available through the configured Swagger endpoint.
-
-```csharp
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-```
-
-Swagger is not enabled in non-development environments.
-
-## Running Locally
-
-Restore dependencies:
+With a MySQL instance reachable through your user-secrets connection string:
 
 ```bash
-dotnet restore
+dotnet run --project src/Accounts.DataApi/AccountsAPI
 ```
 
-Configure the required local user secrets:
+To run the whole system, use Docker Compose from the repository root. See the [root README](../../README.md).
+
+## Tests
 
 ```bash
-dotnet user-secrets set "ConnectionStrings:AccountsDb" "Server=localhost;Port=3306;Database=AccountsDb;Uid=accounts_user;Pwd=yourpassword;"
-dotnet user-secrets set "AccountsApiKey" "your-accounts-api-key"
+dotnet test src/Accounts.DataApi/AccountsAPI.Tests
 ```
 
-Run the API project:
-
-```bash
-dotnet run
-```
-
-If running from the solution root, provide the project path:
-
-```bash
-dotnet run --project path/to/AccountsAPI
-```
-
-The MySQL database must also be running and reachable through the configured `ConnectionStrings:AccountsDb` value.
-
-## Running with Docker Compose
-
-This project is designed to be run as part of the full accounts system through a separate deployment repository.
-
-The deployment repository contains the `docker-compose.yaml` file used to start the Frontend, the Accounts Application API, the Accounts API, and the MySQL database together.
-
-From the deployment repository, run:
-
-```bash
-docker compose up
-```
-
-The deployment repository is responsible for providing runtime configuration such as API keys, database connection strings, environment variables, Docker secrets, and database initialization files.
-
-For this service, Docker Compose provides the MySQL connection string as an environment variable:
-
-```yaml
-environment:
-  ConnectionStrings__AccountsDb: "Server=accountsdb;Port=3306;Database=AccountsDb;User ID=accounts_user;Password=${MYSQL_PASSWORD};"
-```
-
-In ASP.NET Core configuration, double underscores are converted into nested configuration keys. Therefore:
-
-```text
-ConnectionStrings__AccountsDb
-```
-
-is read by the application as:
-
-```text
-ConnectionStrings:AccountsDb
-```
-
-The API then reads this value using:
-
-```csharp
-builder.Configuration.GetConnectionString("AccountsDb")
-```
-
-The database password is not hard-coded in the Compose file. It is provided through the `MYSQL_PASSWORD` environment variable:
-
-```yaml
-Password=${MYSQL_PASSWORD}
-```
-
-The same password is also used by the MySQL container when creating the database user:
-
-```yaml
-environment:
-  MYSQL_DATABASE: AccountsDb
-  MYSQL_USER: accounts_user
-  MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
-  MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
-```
-
-The `:?` syntax means Docker Compose will fail to start if the required environment variable is missing.
-
-The Accounts API also receives its API key through a Docker secret:
-
-```yaml
-secrets:
-  - source: AccountsApiKey
-    target: AccountsApiKey
-```
-
-The secret is defined in the deployment repository as:
-
-```yaml
-secrets:
-  AccountsApiKey:
-    file: ./secrets/AccountsApiKey.txt
-```
-
-At runtime, this secret is mounted into the container and loaded by the application through the optional `/run/secrets` configuration provider.
-
-The MySQL database is initialized using the SQL dump file mounted into the MySQL container:
-
-```yaml
-volumes:
-  - ./mySQLDb/accountsdb_dump_v1.sql:/docker-entrypoint-initdb.d/accountsdb_dump_v1.sql:ro
-```
-
-This file is executed only when the MySQL data volume is created for the first time.
-
-The MySQL data is persisted in the named volume:
-
-```yaml
-volumes:
-  mysql-data:
-```
-
-If the SQL dump changes and the database needs to be recreated in a local development environment, remove the volume and start the system again:
-
-```bash
-docker compose down -v
-docker compose up
-```
-
-This repository contains the Accounts API source code only. Runtime orchestration, service wiring, environment variables, secrets, and database initialization are managed outside this repository.
-
-## Configuration Validation
-
-The application validates required configuration at startup.
-
-Startup fails if:
-
-* `AccountsApiKey` is missing
-* `ConnectionStrings:AccountsDb` is missing
-
-The health check fails if:
-
-* The MySQL database is unavailable
-* The connection string is incorrect
-* The configured database user does not have access
-* The database container is still starting
-* The database has not been initialized correctly
+Unit tests cover the application services and API key validation. Integration tests run the repository against a real MySQL database.
 
 ## Troubleshooting
 
-### The API fails on startup
+**`PROCEDURE AccountsDb.GetAccounts does not exist`**: the database was not initialised from the dump. Recreate the volume from the repository root with `docker compose down -v`, then `docker compose up --build`.
 
-Check that all required configuration values are present:
+**401 Unauthorized**: check the `x-api-key` header matches the configured `AccountsApiKey`.
 
-```text
-ConnectionStrings:AccountsDb
-AccountsApiKey
-```
-
-Also check that the connection string is valid.
-
-### Requests return unauthorized
-
-Check that the request includes the required API key header:
-
-```text
-x-api-key
-```
-
-Also check that the provided key matches the configured `AccountsApiKey`.
-
-### The health check fails
-
-Check that:
-
-* The MySQL container is running
-* The database host in the connection string is correct
-* The database port is correct
-* The database name is correct
-* The username and password are correct
-* The database user has access to the configured database
-* The database has finished initializing
-
-### Account endpoints fail
-
-Check that:
-
-* The MySQL database is running
-* The API can connect to the database
-* The required tables exist
-* The required stored procedures exist
-* The database seed or dump file ran successfully
-* The configured database user has permission to execute the required queries or stored procedures
-
-If the API returns an error such as:
-
-```text
-PROCEDURE AccountsDb.GetAccounts does not exist
-```
-
-the database was not initialized with the expected stored procedure.
-
-In that case, check the database seed or dump file in the deployment repository and recreate the database volume if needed.
-
-For local Docker Compose environments, MySQL initialization scripts only run when the database volume is created for the first time. If the seed file changes, the database volume may need to be recreated:
-
-```bash
-docker compose down -v
-docker compose up
-```
-
-## Security Notes
-
-Secrets are not stored in this repository.
-
-Do not commit:
-
-* API keys
-* Database passwords
-* Database connection strings containing credentials
-* Environment-specific credentials
-* Production configuration values
-* Local user-secrets files
-* Generated secret files
-
-For local development, use .NET user secrets.
-
-For containerized execution, required secret values are injected by the deployment setup through Docker Compose.
-
-The database connection string contains sensitive credentials and should be treated as a secret.
-
-## Disclaimer
-
-This project is a simple prototype created for demonstration purposes only. It is provided "as is", without warranty of any kind.
-
-The author is not responsible for any issues that may result from the use, modification, deployment, or distribution of this project, including data loss, security issues, or service interruptions.
-
-This project is not intended to be used as-is in a production environment. Before any public or commercial deployment, review the security configuration, secrets management, database configuration, authentication flow, error handling, logs, and infrastructure settings.
+**Health check fails**: check the connection string's host (`db` in Docker, `localhost` when running locally), credentials, and that MySQL has finished initialising.
