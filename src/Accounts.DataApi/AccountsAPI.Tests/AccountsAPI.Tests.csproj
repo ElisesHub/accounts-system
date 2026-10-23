@@ -12,6 +12,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.5" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="Testcontainers.MySql" Version="4.16.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -26,5 +27,11 @@
   <ItemGroup>
     <Folder Include="UnitTests\Application\" />
   </ItemGroup>
-  
+
+    <ItemGroup>
+        <None Include="..\..\..\mySQLDb\accountsdb_dump_v1.sql"
+              Link="TestData\accountsdb_dump_v1.sql"
+              CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
 </Project>

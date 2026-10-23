@@ -11,20 +11,14 @@ using Xunit;
 namespace AccountsAPI.IntegrationTests;
 
 public class
-    AccountsRepositoryTests : IClassFixture<CustomWebApplicationFactory>
+    AccountsRepositoryTests(CustomWebApplicationFactory factory)
+    : IClassFixture<CustomWebApplicationFactory>
 {
-    private readonly CustomWebApplicationFactory _factory;
-
-    public AccountsRepositoryTests(CustomWebApplicationFactory factory)
-    {
-        _factory = factory;
-    }
-
     [Fact]
     public async Task GetAccountAsync_returns_single_account()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var repository = scope.ServiceProvider
             .GetRequiredService<IAccountsRepository>();
 
@@ -48,7 +42,7 @@ public class
     public async Task GetAccountsAsync_returns_accounts()
     {
         //Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var respository = scope.ServiceProvider
             .GetRequiredService<IAccountsRepository>();
         //Act
