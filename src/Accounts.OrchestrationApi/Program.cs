@@ -81,14 +81,7 @@ builder.Services.AddHttpClient<IExternalAccountsClient, ExternalAccountsClient>(
     var options = serviceProvider
         .GetRequiredService<IOptions<ExternalApiOptions>>()
         .Value;
-
-    if (!Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out var baseUri))
-    {
-        throw new InvalidOperationException(
-            $"ExternalApi:BaseUrl must be a valid absolute URI. Current value: '{options.BaseUrl}'.");
-    }
-
-    client.BaseAddress = baseUri;
+    client.BaseAddress = new Uri(options.BaseUrl);
 });
 builder.Services.AddHealthChecks();
 var app = builder.Build();
