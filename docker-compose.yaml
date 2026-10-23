@@ -1,15 +1,15 @@
-
-
 services:
-  portfoliofe:
+  web:
     image: eliseshub/accountsfront:latest
+    build:
+      context: ./src/Accounts.Web
     ports:
       - "1000:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: "http://+:8080"
-      ExternalAccountsApi__BaseUrl: "http://accountsapplicationapi:8080"
-      Auth0__Domain: ${AUTH0_DOMAIN}
+      ExternalAccountsApi__BaseUrl: "http://orchestration-api:8080"
+      Auth0__Domain: your-tenant.eu.auth0.com
     secrets:
       - source: AccountsApplicationApiKey
         target: AccountsApplicationApiKey
@@ -18,52 +18,59 @@ services:
       - source: Auth0ClientSecret
         target: Auth0:ClientSecret
     depends_on:
-      - accountsapplicationapi
+      - orchestration-api
     restart: unless-stopped
 
-
-  accountsapplicationapi:
+  orchestration-api:
     image: eliseshub/accountsapplicationapi:latest
+    build:
+      context: ./src/Accounts.OrchestrationApi
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: "http://+:8080"
-      ExternalDbApi__BaseUrl: "http://accountsapi:8080"
+      ExternalDbApi__BaseUrl: "http://data-api:8080"
     secrets:
       - source: AccountsApiKey
         target: AccountsApiKey
       - source: AccountsApplicationApiKey
         target: AccountsApplicationApiKey
     depends_on:
-      - accountsapi
+      - data-api
     restart: unless-stopped
 
-  accountsapi:
+  data-api:
     image: eliseshub/accountsapi:latest
+    build:
+      context: ./src/Accounts.DataApi/AccountsAPI
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: "http://+:8080"
-      ConnectionStrings__AccountsDb: "Server=accountsdb;Port=3306;Database=AccountsDb;User ID=accounts_user;Password=${MYSQL_PASSWORD};"
     secrets:
       - source: AccountsApiKey
         target: AccountsApiKey
+      - source: AccountsDbConnectionString
+        target: ConnectionStrings:AccountsDb
     depends_on:
-      accountsdb:
+      db:
         condition: service_healthy
     restart: unless-stopped
 
-  accountsdb:
+  db:
     image: mysql:8.0
     environment:
       MYSQL_DATABASE: AccountsDb
       MYSQL_USER: accounts_user
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+      MYSQL_PASSWORD_FILE: /run/secrets/MySQLPassword
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/MySQLRootPassword
+    secrets:
+      - MySQLPassword
+      - MySQLRootPassword
     volumes:
       - mysql-data:/var/lib/mysql
       - ./mySQLDb/accountsdb_dump_v1.sql:/docker-entrypoint-initdb.d/accountsdb_dump_v1.sql:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}" ]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$(cat /run/secrets/MySQLRootPassword)\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -81,3 +88,9 @@ secrets:
     file: ./secrets/Auth0ClientId.txt
   Auth0ClientSecret:
     file: ./secrets/Auth0ClientSecret.txt
+  MySQLPassword:
+    file: ./secrets/MySQLPassword.txt
+  MySQLRootPassword:
+    file: ./secrets/MySQLRootPassword.txt
+  AccountsDbConnectionString:
+    file: ./secrets/AccountsDbConnectionString.txt
