@@ -44,7 +44,7 @@ public class ApiKeyValidator(IOptions<ApiKeyOptions> options) : IApiKeyValidator
 
         if (string.IsNullOrWhiteSpace(key))
         {
-            throw new InvalidOperationException("Outgoing key not found.");
+            throw new InvalidOperationException("AccountsApiKey is not configured.");
         }
         return key;
     }

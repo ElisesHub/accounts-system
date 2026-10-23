@@ -32,24 +32,23 @@ public class ApiKeyValidatorTest
         var result = validator.IsValid(incomingKey);
 
         // Assert
-        Assert.True(expectedResult == result);
+        Assert.Equal(expectedResult, result);
     }
 
 
     [Theory]
-    [InlineData("apikey123", "")]             // empty stored key
-    [InlineData("apikey123", null)]           // null stored key
-    [InlineData("apikey123", "   ")]         // whitespace only stored key
-    public void isValid_returns_expected_throws_exception(string incomingKey, string storedKey)
+    [InlineData("apikey123", "")]       // empty stored key
+    [InlineData("apikey123", null)]     // null stored key
+    [InlineData("apikey123", "   ")]    // whitespace-only stored key
+    public void IsValid_throws_when_stored_key_is_not_configured(string incomingKey, string? storedKey)
     {
         // Arrange
-        var options = Options.Create(new ApiKeyOptions {AccountsApiKey = storedKey});
-
+        var options = Options.Create(new ApiKeyOptions { AccountsApiKey = storedKey });
         var validator = new ApiKeyValidator(options);
 
         // Act and Assert
-        var exception = Assert.Throws<Exception>(()=> validator.IsValid(incomingKey));
-        Assert.Equal("Key is not set in configuration.", exception.Message);
+        var exception = Assert.Throws<InvalidOperationException>(() => validator.IsValid(incomingKey));
+        Assert.Equal("AccountsApiKey is not configured.", exception.Message);
     }
 
 
