@@ -1,0 +1,1 @@
+Server=db;Database=AccountsDb;Uid=accounts_user;Pwd=SOME_PASSWORD_HERE;
