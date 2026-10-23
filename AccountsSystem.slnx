@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Accounts.DataApi/">
+    <Project Path="src/Accounts.DataApi/AccountsAPI.Tests/AccountsAPI.Tests.csproj" />
+    <Project Path="src/Accounts.DataApi/AccountsAPI/AccountsAPI.csproj" />
+  </Folder>
+  <Folder Name="/src/Accounts.OrchestrationApi/">
+    <Project Path="src/Accounts.OrchestrationApi/PortfolioApplicationAPI.csproj" />
+  </Folder>
+  <Folder Name="/src/Accounts.Web/">
+    <Project Path="src/Accounts.Web/PortfolioFe.csproj" />
+  </Folder>
+</Solution>
