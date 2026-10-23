@@ -12,8 +12,8 @@ riderModule.iml
 .DS_Store
 
 # Local ASP.NET config/secrets
-*launchSettings.json
-appsettings.Development.json
+
+
 appsettings.Production.json
 .env
 .env.*
