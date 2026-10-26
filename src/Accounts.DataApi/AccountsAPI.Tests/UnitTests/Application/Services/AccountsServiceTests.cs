@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AccountsAPI.Application.Interfaces;
+using AccountsAPI.Application.Models;
 using AccountsAPI.Application.Services;
 using AccountsAPI.Domain.Entities;
 using FluentAssertions;
-using Moq;
+using NSubstitute;
 using Xunit;
 
 namespace AccountsAPI.Tests.UnitTests.Application.Services;
@@ -24,19 +25,17 @@ public class AccountsServiceTests
             OverdraftLimit = 500.00m
         };
 
-        var accountsRepo = new Mock<IAccountsRepository>();
-        accountsRepo
-            .Setup(r => r.GetAccountAsync("1"))
-            .ReturnsAsync(returnedAccount);
+        var accountsRepo = Substitute.For<IAccountsRepository>();
+        accountsRepo.GetAccountAsync("1").Returns(returnedAccount);
 
-        var service = new AccountsService(accountsRepo.Object);
+        var service = new AccountsService(accountsRepo);
 
         // Act
         var result = await service.GetAccountAsync("1");
 
         // Assert
         result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
+        (result.CurrentState == ResultStatus.IsSuccess).Should().BeTrue();
         result.Value.Should().BeEquivalentTo(new
         {
             Id = 1,
@@ -71,19 +70,17 @@ public class AccountsServiceTests
             }
         };
 
-        var accountsRepo = new Mock<IAccountsRepository>();
-        accountsRepo
-            .Setup(r => r.GetAccountsAsync())
-            .ReturnsAsync(accounts);
+        var accountsRepo = Substitute.For<IAccountsRepository>();
+        accountsRepo.GetAccountsAsync().Returns(accounts);
 
-        var service = new AccountsService(accountsRepo.Object);
+        var service = new AccountsService(accountsRepo);
 
         // Act
         var result = await service.GetAccountsAsync();
 
         // Assert
         result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
+        (result.CurrentState == ResultStatus.IsSuccess).Should().BeTrue();
         result.Errors.Should().BeNullOrEmpty();
         result.Value.Should().BeEquivalentTo([
             new { Id = 1, FirstName = "John", LastName = "Smith", Balance = 1500.50m, OverdraftLimit = 500.00m },
