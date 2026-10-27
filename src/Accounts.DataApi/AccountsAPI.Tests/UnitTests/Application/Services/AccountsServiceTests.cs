@@ -35,7 +35,7 @@ public class AccountsServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        (result.CurrentState == ResultStatus.IsSuccess).Should().BeTrue();
+        (result.CurrentState == ResultStatus.Success).Should().BeTrue();
         result.Value.Should().BeEquivalentTo(new
         {
             Id = 1,
@@ -80,7 +80,7 @@ public class AccountsServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        (result.CurrentState == ResultStatus.IsSuccess).Should().BeTrue();
+        (result.CurrentState == ResultStatus.Success).Should().BeTrue();
         result.Errors.Should().BeNullOrEmpty();
         result.Value.Should().BeEquivalentTo([
             new { Id = 1, FirstName = "John", LastName = "Smith", Balance = 1500.50m, OverdraftLimit = 500.00m },

@@ -23,7 +23,7 @@ public class AccountsService(IAccountsRepository accountsRepository)
     public async Task<Result<AccountResponse>> GetAccountAsync(string accountId)
     {
         var result = AccountId.Create(accountId);
-        if (result.CurrentState != ResultStatus.IsSuccess)
+        if (result.CurrentState != ResultStatus.Success)
         {
                 return Result<AccountResponse>.Validation(result?.Errors);
         }

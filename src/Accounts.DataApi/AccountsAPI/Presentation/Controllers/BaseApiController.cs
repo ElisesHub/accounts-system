@@ -10,7 +10,7 @@ public abstract class BaseApiController : ControllerBase
     protected IActionResult FromResult<T>(Result<T> result)
     {
 
-        if (result.CurrentState == ResultStatus.IsValidationError)
+        if (result.CurrentState == ResultStatus.ValidationError)
         {
             return BadRequest(new ApiErrorResponse
             {
@@ -21,7 +21,7 @@ public abstract class BaseApiController : ControllerBase
             });
         }
 
-        if (result.CurrentState == ResultStatus.IsNotFound)
+        if (result.CurrentState == ResultStatus.NotFound)
         {
             return NotFound(new ApiErrorResponse
             {
