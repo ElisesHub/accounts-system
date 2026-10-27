@@ -34,8 +34,8 @@ CREATE TABLE `accounts` (
   `id` int NOT NULL AUTO_INCREMENT,
   `firstname` varchar(45) DEFAULT NULL,
   `lastname` varchar(45) DEFAULT NULL,
-  `currentBalance` decimal(18,2) NOT NULL,
-  `overdraftLimit` decimal(18,2) NOT NULL,
+  `currentBalance` decimal(19,4) NOT NULL,
+  `overdraftLimit` decimal(19,4) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -62,7 +62,7 @@ CREATE TABLE `transactions` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `transactionTypeId` int NOT NULL,
   `accountId` bigint unsigned NOT NULL,
-  `amount` decimal(15,2) NOT NULL,
+  `amount` decimal(19,4) NOT NULL,
   `transactionDate` datetime NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
