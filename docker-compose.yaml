@@ -41,7 +41,8 @@ services:
   data-api:
     image: eliseshub/accountsapi:latest
     build:
-      context: ./src/Accounts.DataApi/AccountsAPI
+      context: .
+      dockerfile: src/Accounts.DataApi/AccountsAPI/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: "http://+:8080"
