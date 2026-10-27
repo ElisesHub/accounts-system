@@ -10,8 +10,7 @@ namespace AccountsAPI.Presentation.Controllers;
 [Route("api/[controller]")]
 [Authorize(Policy = "RequireApiKey")]
 public class AccountsController(
-    IAccountsService accountsService,
-    IConfiguration configuration)
+    IAccountsService accountsService)
     : BaseApiController
 {
     /// <summary>
@@ -30,10 +29,10 @@ public class AccountsController(
     /// Thrown when an unexpected error occurs during the operation.
     /// </exception>
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetAccount(int id)
+    public async Task<IActionResult> GetAccount(int id, CancellationToken  ct)
     {
             var result =
-                await accountsService.GetAccountAsync(id.ToString());
+                await accountsService.GetAccountAsync(id, ct);
 
             return FromResult(result);
     }
@@ -49,13 +48,10 @@ public class AccountsController(
     /// Thrown when an unexpected error occurs during the operation.
     /// </exception>
     [HttpGet]
-    public async Task<IActionResult> GetAccounts()
+    public async Task<IActionResult> GetAccounts(CancellationToken  ct)
     {
-            var result = await accountsService.GetAccountsAsync();
+            var result = await accountsService.GetAccountsAsync(ct);
 
             return FromResult(result);
     }
-
-
-
 }

@@ -14,8 +14,7 @@ public class AccountsGrpcService(
         GetAccountRequest request, ServerCallContext context)
     {
         var accountResult =
-            await accountsService.GetAccountAsync(request.AccountId
-                .ToString());
+            await accountsService.GetAccountAsync(request.AccountId, context.CancellationToken);
 
         switch (accountResult.CurrentState)
         {

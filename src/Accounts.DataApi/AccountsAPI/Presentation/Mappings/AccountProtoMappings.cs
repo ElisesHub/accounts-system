@@ -3,7 +3,7 @@ using AccountsAPI.Application.Dtos.Accounts;
 
 namespace AccountsAPI.Presentation.Mappings;
 
-public static class AccountProtoMappings // `static class`, the same as MoneyProtoMappings.
+public static class AccountProtoMappings
 {
     public static Account ToAccount(AccountDto account) =>
          new Account
@@ -11,7 +11,6 @@ public static class AccountProtoMappings // `static class`, the same as MoneyPro
             AccountId = account.Id,
             FirstName = account.FirstName,
             LastName = account.LastName,
-            Email = account.Email,
             Balance = MoneyProtoMappings.ToMoney(account.Balance, account.CurrencyCode),
             OverdraftLimit = MoneyProtoMappings.ToMoney(account.OverdraftLimit, account.CurrencyCode)
         };

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using AccountsAPI.Application.Interfaces;
 using AccountsAPI.Application.Models;
@@ -18,7 +19,7 @@ public class AccountsServiceTests
         // Arrange
         var returnedAccount = new Account
         {
-            Id = AccountId.Create("1").Value,
+            Id = AccountId.Create(1).Value,
             FirstName = "John",
             LastName = "Smith",
             Balance = 1500.50m,
@@ -26,16 +27,16 @@ public class AccountsServiceTests
         };
 
         var accountsRepo = Substitute.For<IAccountsRepository>();
-        accountsRepo.GetAccountAsync("1").Returns(returnedAccount);
+        accountsRepo.GetAccountAsync(1, Arg.Any<CancellationToken>()).Returns(returnedAccount);
 
         var service = new AccountsService(accountsRepo);
 
         // Act
-        var result = await service.GetAccountAsync("1");
+        var result = await service.GetAccountAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
-        (result.CurrentState == ResultStatus.Success).Should().BeTrue();
+        result.CurrentState.Should().Be(ResultStatus.Success);
+
         result.Value.Should().BeEquivalentTo(new
         {
             Id = 1,
@@ -54,7 +55,7 @@ public class AccountsServiceTests
         {
             new()
             {
-                Id = AccountId.Create("1").Value,
+                Id = AccountId.Create(1).Value,
                 FirstName = "John",
                 LastName = "Smith",
                 Balance = 1500.50m,
@@ -62,7 +63,7 @@ public class AccountsServiceTests
             },
             new()
             {
-                Id = AccountId.Create("2").Value,
+                Id = AccountId.Create(2).Value,
                 FirstName = "Jane",
                 LastName = "Smith",
                 Balance = 1000.50m,
@@ -71,16 +72,15 @@ public class AccountsServiceTests
         };
 
         var accountsRepo = Substitute.For<IAccountsRepository>();
-        accountsRepo.GetAccountsAsync().Returns(accounts);
+        accountsRepo.GetAccountsAsync(Arg.Any<CancellationToken>()).Returns(accounts);
 
         var service = new AccountsService(accountsRepo);
 
         // Act
-        var result = await service.GetAccountsAsync();
+        var result = await service.GetAccountsAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
-        (result.CurrentState == ResultStatus.Success).Should().BeTrue();
+        result.CurrentState.Should().Be(ResultStatus.Success);
         result.Errors.Should().BeNullOrEmpty();
         result.Value.Should().BeEquivalentTo([
             new { Id = 1, FirstName = "John", LastName = "Smith", Balance = 1500.50m, OverdraftLimit = 500.00m },

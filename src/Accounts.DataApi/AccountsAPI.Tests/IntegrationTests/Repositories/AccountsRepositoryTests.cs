@@ -1,14 +1,13 @@
-using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AccountsAPI.Application.Interfaces;
 using AccountsAPI.Domain.Entities;
-using AccountsAPI.Tests.IntegrationTests;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace AccountsAPI.IntegrationTests;
+namespace AccountsAPI.Tests.IntegrationTests.Repositories;
 
 public class
     AccountsRepositoryTests(CustomWebApplicationFactory factory)
@@ -23,14 +22,14 @@ public class
             .GetRequiredService<IAccountsRepository>();
 
         // Act
-        var result = await repository.GetAccountAsync("1");
+        var result = await repository.GetAccountAsync(1, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
 
         result.Should().BeEquivalentTo( new
         {
-            Id = AccountId.Create("1").Value,
+            Id = AccountId.Create(1).Value,
             FirstName = "John",
             LastName = "Smith",
             Balance = 1500.50m,
@@ -46,7 +45,7 @@ public class
         var respository = scope.ServiceProvider
             .GetRequiredService<IAccountsRepository>();
         //Act
-        var result = await respository.GetAccountsAsync();
+        var result = await respository.GetAccountsAsync(CancellationToken.None);
 
         //Assert
         result.Should().NotBeNull();
@@ -55,7 +54,7 @@ public class
         result.First().Should().BeEquivalentTo(
             new
             {
-                Id = AccountId.Create("1").Value,
+                Id = AccountId.Create(1).Value,
                 FirstName = "John",
                 LastName = "Smith",
                 Balance = 1500.50m,

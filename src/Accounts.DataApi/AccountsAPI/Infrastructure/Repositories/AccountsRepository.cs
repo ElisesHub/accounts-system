@@ -1,6 +1,7 @@
 using System.Data;
 using AccountsAPI.Application.Interfaces;
 using AccountsAPI.Domain.Entities;
+using AccountsAPI.Infrastructure.Mappings;
 using MySqlConnector;
 
 namespace AccountsAPI.Infrastructure.Repositories;
@@ -8,113 +9,39 @@ namespace AccountsAPI.Infrastructure.Repositories;
 public class AccountsRepository(MySqlDataSource dataSource)
     : IAccountsRepository
 {
-    public async Task<Account?> GetAccountAsync(string accountId)
+    public async Task<Account?> GetAccountAsync(int accountId,
+        CancellationToken ct)
     {
-        Account account = new Account();
-        try
+        await using var con =
+            await dataSource.OpenConnectionAsync(ct);
+
+        await using var cmd = new MySqlCommand("GetAccount", con);
+        cmd.CommandType = CommandType.StoredProcedure;
+        cmd.Parameters.Add("p_id", MySqlDbType.Int32).Value =
+            accountId;
+
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+
+        if (await reader.ReadAsync(ct))
         {
-            await using MySqlConnection con =
-                await dataSource.OpenConnectionAsync();
-
-            await using MySqlCommand cmd = new MySqlCommand("GetAccount", con);
-            cmd.CommandType = CommandType.StoredProcedure;
-            cmd.Parameters.AddWithValue("p_id", accountId);
-
-            await using MySqlDataReader reader = await cmd.ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                if (reader["id"] != DBNull.Value)
-                {
-                    account.Id = AccountId.From((int)reader["id"]);
-                }
-
-                if (reader["firstname"] != DBNull.Value)
-                {
-                    account.FirstName =
-                        reader["firstname"].ToString();
-                }
-
-                if (reader["lastname"] != DBNull.Value)
-                {
-                    account.LastName =
-                        reader["lastname"].ToString();
-                }
-
-                if (reader["currentBalance"] != DBNull.Value)
-                {
-                    account.Balance =
-                        Convert.ToDecimal(reader["currentBalance"]);
-                }
-
-                if (reader["overdraftLimit"] != DBNull.Value)
-                {
-                    account.OverdraftLimit =
-                        Convert.ToDecimal(reader["overdraftLimit"]);
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            //TODO: Log this
-            throw;
+            return AccountDataMappings.MapFromDatabase(reader);
         }
 
-
-        return account;
+        return null;
     }
 
-    public async Task<IReadOnlyList<Account>?> GetAccountsAsync()
+    public async Task<IReadOnlyList<Account>> GetAccountsAsync(
+        CancellationToken ct)
     {
-        List<Account> list = new List<Account>();
+        var list = new List<Account>();
+        await using var con = await dataSource.OpenConnectionAsync(ct);
+        await using var cmd = new MySqlCommand("GetAccounts", con);
+        cmd.CommandType = CommandType.StoredProcedure;
 
-        try
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
         {
-            await using MySqlConnection con =
-                await dataSource.OpenConnectionAsync();
-
-            await using MySqlCommand cmd = new MySqlCommand("GetAccounts", con);
-            cmd.CommandType = CommandType.StoredProcedure;
-
-            await using MySqlDataReader reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                Account account = new Account();
-
-                if (reader["id"] != DBNull.Value)
-                {
-                    account.Id = AccountId.From((int)reader["id"]);
-                }
-
-                if (reader["firstname"] != DBNull.Value)
-                {
-                    account.FirstName = reader["firstname"].ToString();
-                }
-
-                if (reader["lastname"] != DBNull.Value)
-                {
-                    account.LastName = reader["lastname"]?.ToString();
-                }
-
-                if (reader["currentBalance"] != DBNull.Value)
-                {
-                    account.Balance =
-                        Convert.ToDecimal(reader["currentBalance"]);
-                }
-
-                if (reader["overdraftLimit"] != DBNull.Value)
-                {
-                    account.OverdraftLimit =
-                        Convert.ToDecimal(reader["overdraftLimit"]);
-                }
-
-                list.Add(account);
-            }
-        }
-        catch (Exception e)
-        {
-            //TODO: add logging
-            throw;
+            list.Add(AccountDataMappings.MapFromDatabase(reader));
         }
 
         return list;

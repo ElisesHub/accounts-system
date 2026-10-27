@@ -6,6 +6,6 @@ namespace AccountsAPI.Application.Interfaces;
 
 public interface IAccountsService
 {
-    Task<Result<AccountDto>> GetAccountAsync(string accountId);
-    Task<Result<IReadOnlyList<AccountDto>?>> GetAccountsAsync();
+    Task<Result<AccountDto>> GetAccountAsync(int accountId, CancellationToken ct);
+    Task<Result<IReadOnlyList<AccountDto>?>> GetAccountsAsync(CancellationToken ct);
 }

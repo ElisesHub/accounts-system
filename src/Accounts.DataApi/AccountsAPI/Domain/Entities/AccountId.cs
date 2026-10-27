@@ -9,40 +9,26 @@ public readonly record struct AccountId
     private AccountId(int value) => Value = value;
 
     /// <summary>
-    /// Security validation method. Creates an instance of <see cref="AccountId"/> based on the provided string input.
-    /// Validates the input to ensure it is a non-empty, numeric, and positive value.
+    /// Creates an account ID after passing validation checks
     /// </summary>
-    /// <param name="accountId">The string representation of the account ID to create.</param>
-    /// <returns>
-    /// A <see cref="Result{T}"/> containing a successful result with the created <see cref="AccountId"/> instance
-    /// or an appropriate validation error if the input is invalid.
-    /// </returns>
-    public static Result<AccountId> Create(string accountId)
+    /// <param name="accountId">The ID proposal to verify</param>
+    /// <returns>Returns a Result object with the AccountId object as its value property. On invalid input, the Result is a validation failure with no value.</returns>
+    public static Result<AccountId> Create(int accountId)
     {
-        if (string.IsNullOrWhiteSpace(accountId))
-            return Result<AccountId>.Validation("accountId", "Account id is required");
+        if (accountId <= 0)
+            return Result<AccountId>.Validation("accountId",
+                "Account id must be a positive number");
 
-        if (!int.TryParse(accountId, out var id))
-            return Result<AccountId>.Validation("accountId", "Account id must be a number");
-
-        if (id <= 0)
-            return Result<AccountId>.Validation("accountId", "Account id must be a positive number");
-
-        return Result<AccountId>.Success(new AccountId(id));
+        return Result<AccountId>.Success(new AccountId(accountId));
     }
 
     public override string ToString() => Value.ToString();
 
     /// <summary>
-    /// Creates an instance of <see cref="AccountId"/> from the provided integer value.
-    /// This method is intended for internal use and does not perform validation on the value. Used for hydrating the entity from the database.
+    /// Creates an Account ID when coming from a trusted source therefore not needing to pass validation checks
     /// </summary>
-    /// <param name="value">The integer value representing the account ID.</param>
-    /// <returns>
-    /// An instance of <see cref="AccountId"/> encapsulating the provided value.
-    /// </returns>
+    /// <param name="value">The account ID read from a trusted source</param>
+    /// <returns>Returns an account ID object</returns>
     internal static AccountId From(int value)
         => new AccountId(value);
-
-
 }
