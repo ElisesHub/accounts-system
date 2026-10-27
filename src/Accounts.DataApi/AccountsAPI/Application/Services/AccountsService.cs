@@ -1,4 +1,4 @@
-using AccountsAPI.Application.Dtos.ApiResponses;
+using AccountsAPI.Application.Dtos.Accounts;
 using AccountsAPI.Application.Interfaces;
 using AccountsAPI.Application.Mappings;
 using AccountsAPI.Application.Models;
@@ -20,22 +20,22 @@ public class AccountsService(IAccountsRepository accountsRepository)
     /// <param name="incomingApiKey"></param>
     /// <returns>The <see cref="Account"/> object if found, or null if no account matches the specified identifier.</returns>
     /// <exception cref="Exception">Thrown when no account is found with the specified identifier.</exception>
-    public async Task<Result<AccountResponse>> GetAccountAsync(string accountId)
+    public async Task<Result<AccountDto>> GetAccountAsync(string accountId)
     {
         var result = AccountId.Create(accountId);
         if (result.CurrentState != ResultStatus.Success)
         {
-                return Result<AccountResponse>.Validation(result?.Errors);
+                return Result<AccountDto>.Validation(result?.Errors);
         }
 
         var account = await accountsRepository.GetAccountAsync(accountId);
 
         if (account is null || account.Id == default)
         {
-            return Result<AccountResponse>.NotFound("Account not found");
+            return Result<AccountDto>.NotFound("Account not found");
         }
 
-        return Result<AccountResponse>.Success(AccountMappings.ToResponse(account));
+        return Result<AccountDto>.Success(AccountMappings.ToResponse(account));
     }
 
 
@@ -46,16 +46,16 @@ public class AccountsService(IAccountsRepository accountsRepository)
     /// </summary>
     /// <returns>A list of <see cref="Account"/> objects, or null if no accounts are found.</returns>
     /// <exception cref="Exception">Thrown when no accounts are found in the repository.</exception>
-    public async Task<Result<IReadOnlyList<AccountResponse>?>> GetAccountsAsync()
+    public async Task<Result<IReadOnlyList<AccountDto>?>> GetAccountsAsync()
     {
         var accounts = await accountsRepository.GetAccountsAsync();
 
         if (accounts == null || accounts.Count == 0)
         {
-            return Result<IReadOnlyList<AccountResponse>?>.NotFound("No accounts found");
+            return Result<IReadOnlyList<AccountDto>?>.NotFound("No accounts found");
         }
 
-        return Result<IReadOnlyList<AccountResponse>?>.Success(AccountMappings.ToResponseList(accounts));
+        return Result<IReadOnlyList<AccountDto>?>.Success(AccountMappings.ToResponseList(accounts));
     }
 
 
