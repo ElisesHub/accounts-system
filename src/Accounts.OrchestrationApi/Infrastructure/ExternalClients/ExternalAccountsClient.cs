@@ -1,10 +1,10 @@
 using System.Net;
 using System.Text.Json;
-using AccountsApplicationAPI.Application.Interfaces;
 using FluentResults;
 using Microsoft.Extensions.Options;
+using PortfolioApplicationAPI.Application.Dtos.Accounts;
+using PortfolioApplicationAPI.Application.Interfaces;
 using PortfolioApplicationAPI.Domain.Entities;
-using PortfolioApplicationAPI.Infrastructure.Dtos;
 using PortfolioApplicationAPI.Infrastructure.Security.ApiKeys;
 
 namespace PortfolioApplicationAPI.Infrastructure.ExternalClients;
@@ -26,22 +26,25 @@ public class ExternalAccountsClient(
     /// <returns>A task that represents the asynchronous operation. The task result contains an <see cref="Account"/> object if found, or null if no account is found.</returns>
     /// <exception cref="HttpRequestException">Thrown when the request to retrieve the account fails.</exception>
     /// <exception cref="JsonException">Thrown when the response content cannot be deserialized into an <see cref="Account"/> object.</exception>
-    public async Task<Account?> GetAccountAsync(string id)
+    public async Task<Result<Account>> GetAccountAsync(int id, CancellationToken ct)
     {
         var request = SetUpRequest($"{AccountsUrl}/{id}");
-        var response = await httpClient.SendAsync(request);
-        await EnsureSuccessOrNotFound(response);
-        var dto =  await response.Content.ReadFromJsonAsync<AccountDto>();
-        return new Account()
+        var response = await httpClient.SendAsync(request, ct);
+        await EnsureSuccessOrNotFound(response, ct);
+        var dto =  await response.Content.ReadFromJsonAsync<AccountDto>(ct);
+        var account = new Account()
         {
             Id = AccountId.From(dto.Id),
             FirstName = dto.FirstName,
             LastName = dto.LastName,
-            Email = dto.Email,
             Balance = dto.Balance,
             OverdraftLimit = dto.OverdraftLimit
 
         };
+        return Result.Ok(account);
+
+
+
 
     }
     /// <summary>
@@ -50,16 +53,16 @@ public class ExternalAccountsClient(
     /// <returns>A task that represents the asynchronous operation. The task result contains an enumerable collection of <see cref="Account"/> objects, or null if no accounts are found.</returns>
     /// <exception cref="HttpRequestException">Thrown when the request to retrieve accounts fails.</exception>
     /// <exception cref="Exception">Thrown if the response content cannot be deserialized into an enumerable collection of accounts.</exception>
-    public async Task<IReadOnlyList<Account>?> GetAccountsAsync()
+    public async Task<Result<IReadOnlyList<Account>>> GetAccountsAsync(CancellationToken ct)
     {
         var request = SetUpRequest(AccountsUrl);
         var response = await httpClient.SendAsync(request);
 
         if (response is {StatusCode: HttpStatusCode.NotFound, IsSuccessStatusCode: false})
         {
-            return null;
+            Result.Fail("Account not found");
         }
-        await EnsureSuccessOrNotFound(response);
+        await EnsureSuccessOrNotFound(response, ct);
 
         var dtoList = await response.Content.ReadFromJsonAsync<IReadOnlyList<AccountDto>>();
 
@@ -71,12 +74,11 @@ public class ExternalAccountsClient(
             Id = AccountId.From(dto.Id),
             FirstName = dto.FirstName,
             LastName = dto.LastName,
-            Email = dto.Email,
             Balance = dto.Balance,
             OverdraftLimit = dto.OverdraftLimit
         }).ToList();
 
-        return list;
+        return Result.Ok(list);
 
 
     }
@@ -89,14 +91,14 @@ public class ExternalAccountsClient(
     /// Thrown when the HTTP response contains a non-success status code. The exception includes the
     /// status code, reason phrase, and response body for diagnostic purposes.
     /// </exception>
-    private async Task EnsureSuccessOrNotFound(HttpResponseMessage response)
+    private async Task EnsureSuccessOrNotFound(HttpResponseMessage response, CancellationToken ct)
     {
         if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotFound)
         {
             return;
         }
 
-        var body = await response.Content.ReadAsStringAsync();
+        var body = await response.Content.ReadAsStringAsync(ct);
             throw new HttpRequestException(
                 $"External Accounts Client failed. Status: {(int)response.StatusCode} {response.ReasonPhrase}. Body: {body}", null, response.StatusCode);
 
