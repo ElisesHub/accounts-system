@@ -6,7 +6,7 @@ namespace PortfolioApplicationAPI.Presentation.Controllers;
 
     [ApiController]
     [Route("api/[controller]")]
-    public class AccountsController(IAccountsService accountsService, IConfiguration configuration)
+    public class AccountsController(IAccountsService accountsService)
         : BaseApiController
     {
         [HttpGet("{id}")]

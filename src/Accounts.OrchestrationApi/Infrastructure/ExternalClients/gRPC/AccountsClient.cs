@@ -1,11 +1,13 @@
 using Accounts.Api.V1;
 using FluentResults;
 using Grpc.Core;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
 using PortfolioApplicationAPI.Application.Common.Errors;
 using PortfolioApplicationAPI.Application.Interfaces;
 using PortfolioApplicationAPI.Infrastructure.Mappings;
 using PortfolioApplicationAPI.Infrastructure.Security.ApiKeys;
+using PortfolioApplicationAPI.Presentation.Models;
 using Account = PortfolioApplicationAPI.Domain.Entities.Account;
 using AccountsGrpc = Accounts.Api.V1.AccountsService;
 namespace PortfolioApplicationAPI.Infrastructure.ExternalClients.gRPC;
@@ -37,9 +39,15 @@ public class AccountsClient(AccountsGrpc.AccountsServiceClient client,
 
     }
 
-    public Task<Result<IReadOnlyList<Account>>> GetAccountsAsync(CancellationToken ct)
+    public async Task<Result<IReadOnlyList<Account>>> GetAccountsAsync(CancellationToken ct)
     {
-        throw new NotImplementedException();
+        var response = await client.GetAccountsAsync(
+            new GetAccountsRequest{},
+            headers: new Metadata { { "x-api-key", GetOutgoingKey() } },
+            deadline: DateTime.UtcNow.AddSeconds(5),
+            cancellationToken: ct);
+
+        return Result.Ok<IReadOnlyList<Account>>(AccountDataMappings.ToAccounts(response.Accounts));
     }
 
     /// <summary>

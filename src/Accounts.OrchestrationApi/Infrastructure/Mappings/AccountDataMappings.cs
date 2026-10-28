@@ -23,4 +23,10 @@ public static class AccountDataMappings
 
         };
     }
+
+    public static IReadOnlyList<Account> ToAccounts(
+        IReadOnlyList<GrpcModels.Account> accounts)
+    {
+        return accounts.Select(account => MapToAccount(account)).ToList();
+    }
 }

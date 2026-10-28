@@ -1,6 +1,5 @@
 services:
   web:
-    image: eliseshub/accountsfront:latest
     build:
       context: ./src/Accounts.Web
     ports:
@@ -22,13 +21,13 @@ services:
     restart: unless-stopped
 
   orchestration-api:
-    image: eliseshub/accountsapplicationapi:latest
     build:
-      context: ./src/Accounts.OrchestrationApi
+      context: .
+      dockerfile: src/Accounts.OrchestrationApi/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: "http://+:8080"
-      ExternalDbApi__BaseUrl: "http://data-api:8080"
+      ExternalDbApi__BaseUrl: "http://data-api:8081"
     secrets:
       - source: AccountsApiKey
         target: AccountsApiKey
@@ -39,7 +38,6 @@ services:
     restart: unless-stopped
 
   data-api:
-    image: eliseshub/accountsapi:latest
     build:
       context: .
       dockerfile: src/Accounts.DataApi/AccountsAPI/Dockerfile
