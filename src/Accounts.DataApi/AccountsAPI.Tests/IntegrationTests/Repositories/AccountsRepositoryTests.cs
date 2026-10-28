@@ -9,6 +9,11 @@ using Xunit;
 
 namespace AccountsAPI.Tests.IntegrationTests.Repositories;
 
+/// <summary>
+/// Integration tests for <see cref="IAccountsRepository"/> against a real MySQL database
+/// started with Testcontainers and seeded from the SQL dump.
+/// Docker must be running.
+/// </summary>
 public class
     AccountsRepositoryTests(CustomWebApplicationFactory factory)
     : IClassFixture<CustomWebApplicationFactory>
@@ -22,7 +27,7 @@ public class
             .GetRequiredService<IAccountsRepository>();
 
         // Act
-        var result = await repository.GetAccountAsync(1, CancellationToken.None);
+        var result = await repository.GetAccountAsync(AccountId.Create(1).Value, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -42,10 +47,10 @@ public class
     {
         //Arrange
         using var scope = factory.Services.CreateScope();
-        var respository = scope.ServiceProvider
+        var repository = scope.ServiceProvider
             .GetRequiredService<IAccountsRepository>();
         //Act
-        var result = await respository.GetAccountsAsync(CancellationToken.None);
+        var result = await repository.GetAccountsAsync(CancellationToken.None);
 
         //Assert
         result.Should().NotBeNull();

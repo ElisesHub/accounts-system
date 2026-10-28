@@ -27,7 +27,7 @@ public class AccountsServiceTests
         };
 
         var accountsRepo = Substitute.For<IAccountsRepository>();
-        accountsRepo.GetAccountAsync(1, Arg.Any<CancellationToken>()).Returns(returnedAccount);
+        accountsRepo.GetAccountAsync(AccountId.Create(1).Value, Arg.Any<CancellationToken>()).Returns(returnedAccount);
 
         var service = new AccountsService(accountsRepo);
 
