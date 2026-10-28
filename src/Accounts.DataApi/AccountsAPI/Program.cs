@@ -4,6 +4,7 @@ using AccountsAPI.Infrastructure.Repositories;
 using AccountsAPI.Infrastructure.Security;
 using AccountsAPI.Presentation.Authentication;
 using AccountsAPI.Presentation.ExceptionHandling;
+using AccountsAPI.Presentation.Grpc;
 using AccountsAPI.Presentation.Models;
 using AccountsAPI.Presentation.Models.Authentication;
 using Microsoft.AspNetCore.Mvc;
@@ -61,6 +62,7 @@ builder.Services.AddControllers()
             return new BadRequestObjectResult(response);
         };
     });
+builder.Services.AddGrpc();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -96,7 +98,7 @@ if (app.Environment.IsDevelopment())
 app.MapHealthChecks("/health");
 
 app.MapControllers().RequireAuthorization("RequireApiKey");
-
+app.MapGrpcService<AccountsGrpcService>().RequireAuthorization("RequireApiKey");
 // app.UseHttpsRedirection();
 
 app.Run();

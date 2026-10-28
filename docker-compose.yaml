@@ -45,7 +45,6 @@ services:
       dockerfile: src/Accounts.DataApi/AccountsAPI/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ASPNETCORE_URLS: "http://+:8080"
     secrets:
       - source: AccountsApiKey
         target: AccountsApiKey
