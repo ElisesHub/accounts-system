@@ -23,4 +23,10 @@ public static class AccountProtoMappings
             Balance = MoneyProtoMappings.ToMoney(account.Balance, account.CurrencyCode),
             OverdraftLimit = MoneyProtoMappings.ToMoney(account.OverdraftLimit, account.CurrencyCode)
         };
+
+
+    public static IReadOnlyList<Account> ToAccounts(IReadOnlyList<AccountDto> accounts)
+    {
+        return accounts.Select(account => ToAccount(account)).ToList();
+    }
 }
