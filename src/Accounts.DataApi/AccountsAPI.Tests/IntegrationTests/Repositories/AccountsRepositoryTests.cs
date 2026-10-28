@@ -37,7 +37,7 @@ public class
             Id = AccountId.Create(1).Value,
             FirstName = "John",
             LastName = "Smith",
-            Balance = 1500.50m,
+            Balance = 280.00m,
             OverdraftLimit = 500.00m
         });
     }
@@ -62,7 +62,7 @@ public class
                 Id = AccountId.Create(1).Value,
                 FirstName = "John",
                 LastName = "Smith",
-                Balance = 1500.50m,
+                Balance = 280.00m,
                 OverdraftLimit = 500.00m
             });
     }

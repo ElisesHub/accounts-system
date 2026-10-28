@@ -16,13 +16,16 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Testcontainers.MySql" Version="4.16.0" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.16.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="xunit.v3" Version="3.2.2" />
   </ItemGroup>
+    <ItemGroup>
+        <None Include="..\..\..\DbFiles\init\*" LinkBase="TestData\init" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AccountsAPI\AccountsAPI.csproj" />
@@ -32,8 +35,6 @@
     <Folder Include="UnitTests\Application\" />
   </ItemGroup>
 
-    <ItemGroup>
-        <None Include="..\..\..\mySQLDb\accountsdb_dump_v1.sql" Link="TestData\accountsdb_dump_v1.sql" CopyToOutputDirectory="PreserveNewest" />
-    </ItemGroup>
+
 
 </Project>

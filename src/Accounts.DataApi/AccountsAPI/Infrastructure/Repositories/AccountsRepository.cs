@@ -1,19 +1,32 @@
-using System.Data;
 using AccountsAPI.Application.Interfaces;
 using AccountsAPI.Domain.Entities;
 using AccountsAPI.Infrastructure.Mappings;
-using MySqlConnector;
+using Npgsql;
 
 namespace AccountsAPI.Infrastructure.Repositories;
 
 /// <summary>
-/// Reads accounts from the MySQL database using stored procedures.
+/// Reads accounts from the PostgreSQL database using database functions.
 /// </summary>
-public class AccountsRepository(MySqlDataSource dataSource)
+public class AccountsRepository(NpgsqlDataSource dataSource)
     : IAccountsRepository
 {
+    // Postgres functions are queried like tables, not called as stored procedures.
+    // Columns are listed explicitly so a change to the function's output can't silently reorder them.
+    private const string GetAccountSql =
+        """
+        SELECT account_id, first_name, last_name, balance, overdraft_limit, currency_code
+        FROM get_account(@account_id)
+        """;
+
+    private const string GetAccountsSql =
+        """
+        SELECT account_id, first_name, last_name, balance, overdraft_limit, currency_code
+        FROM get_accounts()
+        """;
+
     /// <summary>
-    /// Retrieves a single account by its identifier, using the <c>GetAccount</c> stored procedure.
+    /// Retrieves a single account by its identifier, using the <c>get_account</c> function.
     /// </summary>
     /// <param name="accountId">The validated ID of the account to retrieve.</param>
     /// <param name="ct">A token to cancel the operation. Cancelling also stops the running database query.</param>
@@ -22,13 +35,11 @@ public class AccountsRepository(MySqlDataSource dataSource)
     public async Task<Account?> GetAccountAsync(AccountId accountId,
         CancellationToken ct)
     {
-        await using var con =
-            await dataSource.OpenConnectionAsync(ct);
+        await using var con = await dataSource.OpenConnectionAsync(ct);
 
-        await using var cmd = new MySqlCommand("GetAccount", con);
-        cmd.CommandType = CommandType.StoredProcedure;
-        cmd.Parameters.Add("p_id", MySqlDbType.Int32).Value =
-            accountId.Value;
+        await using var cmd = new NpgsqlCommand(GetAccountSql, con);
+
+        cmd.Parameters.Add(new NpgsqlParameter<int>("account_id", accountId.Value));
 
         await using var reader = await cmd.ExecuteReaderAsync(ct);
 
@@ -41,7 +52,7 @@ public class AccountsRepository(MySqlDataSource dataSource)
     }
 
     /// <summary>
-    /// Retrieves all accounts, using the <c>GetAccounts</c> stored procedure.
+    /// Retrieves all accounts, using the <c>get_accounts</c> function.
     /// </summary>
     /// <param name="ct">A token to cancel the operation. Cancelling also stops the running database query.</param>
     /// <returns>The accounts. The list is empty if there are none; it is never null.</returns>
@@ -50,9 +61,9 @@ public class AccountsRepository(MySqlDataSource dataSource)
         CancellationToken ct)
     {
         var list = new List<Account>();
+
         await using var con = await dataSource.OpenConnectionAsync(ct);
-        await using var cmd = new MySqlCommand("GetAccounts", con);
-        cmd.CommandType = CommandType.StoredProcedure;
+        await using var cmd = new NpgsqlCommand(GetAccountsSql, con);
 
         await using var reader = await cmd.ExecuteReaderAsync(ct);
         while (await reader.ReadAsync(ct))

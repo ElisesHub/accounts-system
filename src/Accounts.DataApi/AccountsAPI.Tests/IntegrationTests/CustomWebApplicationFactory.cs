@@ -1,9 +1,12 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
+using DotNet.Testcontainers.Configurations;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Testcontainers.MySql;
+using Npgsql;
+using Testcontainers.PostgreSql;
 using Xunit;
 
 namespace AccountsAPI.Tests.IntegrationTests;
@@ -12,30 +15,44 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
 {
     public const string TestApiKey = "integration-test-api-key";
 
-    private static readonly string DumpFile =
-        Path.Combine(AppContext.BaseDirectory, "TestData",
-            "accountsdb_dump_v1.sql");
+    private const string AppPassword = "integration-test-app-password";
 
-    private readonly MySqlContainer _mySql = new MySqlBuilder("mysql:8.0")
-        .WithDatabase("AccountsDb")
-        .WithUsername("accounts_user")
-        .WithPassword("integration-test-password")
-        .WithResourceMapping(new FileInfo(DumpFile), "/docker-entrypoint-initdb.d/")
+    private static readonly string InitDirectory =
+        Path.Combine(AppContext.BaseDirectory, "TestData", "init");
+
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18")
+        .WithDatabase("accountsdata")
+        .WithUsername("accounts_admin")
+        .WithPassword("integration-test-admin-password")
+        .WithResourceMapping(Encoding.UTF8.GetBytes(AppPassword), "/run/secrets/DbAppPassword")
+        .WithResourceMapping(
+            new FileInfo(Path.Combine(InitDirectory, "00_create_app_role.sh")),
+            "/docker-entrypoint-initdb.d/",
+            fileMode: Unix.FileMode755)
+        .WithResourceMapping(
+            new FileInfo(Path.Combine(InitDirectory, "01_schema_and_seed.sql")),
+            "/docker-entrypoint-initdb.d/")
         .Build();
 
-    public async ValueTask InitializeAsync() => await _mySql.StartAsync();
+    public async ValueTask InitializeAsync() => await _postgres.StartAsync();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        var connectionString = new NpgsqlConnectionStringBuilder(_postgres.GetConnectionString())
+        {
+            Username = "accounts_app",
+            Password = null
+        }.ConnectionString;
+
         builder.UseEnvironment("Testing");
-        builder.UseSetting("ConnectionStrings:AccountsDb", _mySql.GetConnectionString());
+        builder.UseSetting("ConnectionStrings:AccountsDb", connectionString);
+        builder.UseSetting("Database:AppPassword", AppPassword);
         builder.UseSetting("AccountsApiKey", TestApiKey);
     }
 
     public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
-        await _mySql.DisposeAsync();
+        await _postgres.DisposeAsync();
     }
-
-
 }

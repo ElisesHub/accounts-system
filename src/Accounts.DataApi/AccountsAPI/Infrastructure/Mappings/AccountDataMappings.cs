@@ -1,5 +1,5 @@
+using System.Data.Common;
 using AccountsAPI.Domain.Entities;
-using MySqlConnector;
 
 namespace AccountsAPI.Infrastructure.Mappings;
 
@@ -15,12 +15,12 @@ public static class AccountDataMappings
     /// </summary>
     /// <param name="reader">A reader positioned on a row containing the account columns.</param>
     /// <returns>The <see cref="Account"/> for the current row.</returns>
-    public static Account MapFromDatabase(MySqlDataReader reader) => new Account
+    public static Account MapFromDatabase(DbDataReader reader) => new Account
     {
-        Id = AccountId.From(reader.GetInt32(reader.GetOrdinal("id"))),
-        FirstName = reader.GetString(reader.GetOrdinal("firstname")),
-        LastName = reader.GetString(reader.GetOrdinal("lastname")),
+        Id = AccountId.From(reader.GetInt32(reader.GetOrdinal("account_id"))),
+        FirstName = reader.GetString(reader.GetOrdinal("first_name")),
+        LastName = reader.GetString(reader.GetOrdinal("last_name")),
         Balance = reader.GetDecimal(reader.GetOrdinal("balance")),
-        OverdraftLimit = reader.GetDecimal(reader.GetOrdinal("overdraftlimit"))
+        OverdraftLimit = reader.GetDecimal(reader.GetOrdinal("overdraft_limit"))
     };
 }

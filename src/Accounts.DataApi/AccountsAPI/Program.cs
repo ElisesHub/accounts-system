@@ -5,7 +5,7 @@ using AccountsAPI.Infrastructure.Security;
 using AccountsAPI.Presentation.Authentication;
 using AccountsAPI.Presentation.Grpc;
 using AccountsAPI.Presentation.Models.Authentication;
-using MySqlConnector;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,17 +35,24 @@ builder.Services.AddAuthorization(options =>
     });
 });
 
-
 builder.Services.AddGrpc();
 
-var accountsDbConnectionString =
+var baseConnectionString =
     builder.Configuration.GetConnectionString("AccountsDb")
     ?? throw new InvalidOperationException("Missing connection string: AccountsDb");
+var dbPassword =
+    builder.Configuration["Database:AppPassword"]
+    ?? throw new InvalidOperationException("Missing configuration value: Database:AppPassword");
 
-builder.Services.AddMySqlDataSource(accountsDbConnectionString);
+var accountsDbConnectionString = new NpgsqlConnectionStringBuilder(baseConnectionString)
+{
+    Password = dbPassword
+}.ConnectionString;
 
-// Reports the API as healthy only when it can connect to the Accounts database.
-builder.Services.AddHealthChecks().AddMySql(accountsDbConnectionString);
+builder.Services.AddNpgsqlDataSource(accountsDbConnectionString);
+
+// Reports the API as healthy only when it can connect to the database.
+builder.Services.AddHealthChecks().AddNpgSql(accountsDbConnectionString);
 
 builder.Services.AddEndpointsApiExplorer();
 

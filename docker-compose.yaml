@@ -43,39 +43,38 @@ services:
       dockerfile: src/Accounts.DataApi/AccountsAPI/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__AccountsDb: "Host=db;Port=5432;Database=accountsdata;Username=accounts_app"
     secrets:
       - source: AccountsApiKey
         target: AccountsApiKey
-      - source: AccountsDbConnectionString
-        target: ConnectionStrings:AccountsDb
+      - source: DbAppPassword
+        target: Database:AppPassword
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
 
   db:
-    image: mysql:8.0
+    image: postgres:18
     environment:
-      MYSQL_DATABASE: AccountsDb
-      MYSQL_USER: accounts_user
-      MYSQL_PASSWORD_FILE: /run/secrets/MySQLPassword
-      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/MySQLRootPassword
+      POSTGRES_DB: accountsdata
+      POSTGRES_USER: accounts_admin
+      POSTGRES_PASSWORD_FILE: /run/secrets/DbAdminPassword
     secrets:
-      - MySQLPassword
-      - MySQLRootPassword
+      - DbAdminPassword
+      - DbAppPassword
     volumes:
-      - mysql-data:/var/lib/mysql
-      - ./mySQLDb/accountsdb_dump_v1.sql:/docker-entrypoint-initdb.d/accountsdb_dump_v1.sql:ro
+      - db-data:/var/lib/postgresql
+      - ./DbFiles/init:/docker-entrypoint-initdb.d:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$(cat /run/secrets/MySQLRootPassword)\""]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
-
 volumes:
-  mysql-data:
+    db-data:
 
 secrets:
   AccountsApiKey:
@@ -86,9 +85,7 @@ secrets:
     file: ./secrets/Auth0ClientId.txt
   Auth0ClientSecret:
     file: ./secrets/Auth0ClientSecret.txt
-  MySQLPassword:
-    file: ./secrets/MySQLPassword.txt
-  MySQLRootPassword:
-    file: ./secrets/MySQLRootPassword.txt
-  AccountsDbConnectionString:
-    file: ./secrets/AccountsDbConnectionString.txt
+  DbAdminPassword:
+    file: ./secrets/DbAdminPassword.txt
+  DbAppPassword:
+    file: ./secrets/DbAppPassword.txt
