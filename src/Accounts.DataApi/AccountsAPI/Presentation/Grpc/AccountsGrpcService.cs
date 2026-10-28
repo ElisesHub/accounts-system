@@ -6,10 +6,26 @@ using Grpc.Core;
 
 namespace AccountsAPI.Presentation.Grpc;
 
+/// <summary>
+/// gRPC implementation of the <c>accounts.v1.AccountsService</c> contract.
+/// Translates application <see cref="Result{T}"/> outcomes into gRPC responses and status codes.
+/// </summary>
 public class AccountsGrpcService(
     ILogger<AccountsGrpcService> logger,
     IAccountsService accountsService) : AccountsService.AccountsServiceBase
 {
+    /// <summary>
+    /// Returns a single account by its ID.
+    /// </summary>
+    /// <param name="request">The request containing the account ID.</param>
+    /// <param name="context">The call context. Its cancellation token is passed down so a cancelled
+    /// call or an expired deadline stops the database query.</param>
+    /// <returns>A response containing the complete account.</returns>
+    /// <exception cref="RpcException">
+    /// <see cref="StatusCode.NotFound"/> if no account has the ID;
+    /// <see cref="StatusCode.InvalidArgument"/> if the ID is not positive, with the field errors in the detail;
+    /// <see cref="StatusCode.Internal"/> if the application returned an unexpected state (logged server-side).
+    /// </exception>
     public override async Task<GetAccountResponse> GetAccount(
         GetAccountRequest request, ServerCallContext context)
     {
@@ -24,7 +40,7 @@ public class AccountsGrpcService(
 
             case ResultStatus.ValidationError:
                 throw new RpcException(new Status(StatusCode.InvalidArgument,
-                    $"{ValidationErrorFormatter.Format(accountResult.Errors)}"));
+                    ValidationErrorFormatter.Format(accountResult.Errors)));
 
             case ResultStatus.Success:
                 return new GetAccountResponse
