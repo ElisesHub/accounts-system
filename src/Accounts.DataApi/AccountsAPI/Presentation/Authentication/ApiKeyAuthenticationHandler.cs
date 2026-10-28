@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using AccountsAPI.Application.Interfaces;
-using AccountsAPI.Presentation.Models;
 using AccountsAPI.Presentation.Models.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
@@ -12,7 +11,7 @@ public sealed class ApiKeyAuthenticationHandler(
     IOptionsMonitor<ApiKeyAuthenticationOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,
-    IApiKeyValidator apiKeyValidator, IHostEnvironment environment)
+    IApiKeyValidator apiKeyValidator)
     : AuthenticationHandler<ApiKeyAuthenticationOptions>(options, logger, encoder)
 {
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -46,34 +45,4 @@ public sealed class ApiKeyAuthenticationHandler(
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }
 
-    protected override Task HandleChallengeAsync(AuthenticationProperties properties)
-    {
-        Response.StatusCode = StatusCodes.Status401Unauthorized;
-        Response.ContentType = "application/json";
-
-        var response = new ApiErrorResponse
-        {
-            Code = "UNAUTHORIZED",
-            Message = "Resource requires authentication.",
-            TraceId = Context.TraceIdentifier,
-            DeveloperMessage = environment.IsDevelopment() ?  "Ensure that the API key is set in the request headers." : null
-        };
-
-        return Response.WriteAsJsonAsync(response);
-    }
-
-    protected override Task HandleForbiddenAsync(AuthenticationProperties properties)
-    {
-        Response.StatusCode = StatusCodes.Status403Forbidden;
-        Response.ContentType = "application/json";
-
-        var response = new ApiErrorResponse
-        {
-            Code = "FORBIDDEN",
-            Message = "Access to resource denied.",
-            TraceId = Context.TraceIdentifier
-        };
-
-        return Response.WriteAsJsonAsync(response);
-    }
 }

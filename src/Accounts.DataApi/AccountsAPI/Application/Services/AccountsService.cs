@@ -1,9 +1,8 @@
-using AccountsAPI.Application.Dtos.ApiResponses;
+using AccountsAPI.Application.Dtos.Accounts;
 using AccountsAPI.Application.Interfaces;
 using AccountsAPI.Application.Mappings;
 using AccountsAPI.Application.Models;
 using AccountsAPI.Domain.Entities;
-using AccountsAPI.Infrastructure.Repositories;
 
 namespace AccountsAPI.Application.Services;
 
@@ -14,51 +13,48 @@ public class AccountsService(IAccountsRepository accountsRepository)
     : IAccountsService
 {
     /// <summary>
-    /// Retrieves an account by its unique identifier asynchronously.
+    /// Retrieves a single account by its identifier asynchronously.
     /// </summary>
-    /// <param name="accountId">The unique identifier of the account to retrieve.</param>
-    /// <param name="incomingApiKey"></param>
-    /// <returns>The <see cref="Account"/> object if found, or null if no account matches the specified identifier.</returns>
-    /// <exception cref="Exception">Thrown when no account is found with the specified identifier.</exception>
-    public async Task<Result<AccountResponse>> GetAccountAsync(string accountId)
+    /// <param name="accountId">The account ID supplied by the caller. Must be positive.</param>
+    /// <param name="ct">A token to cancel the operation, for example when the caller's deadline passes.</param>
+    /// <returns>
+    /// A <see cref="Result{T}"/> that is successful and contains the <see cref="AccountDto"/>,
+    /// a validation failure if <paramref name="accountId"/> is not positive,
+    /// or not found if no account has that ID.
+    /// </returns>
+    public async Task<Result<AccountDto>> GetAccountAsync(int accountId,
+        CancellationToken ct)
     {
-        var result = AccountId.Create(accountId);
-        if (result.CurrentState != ResultStatus.IsSuccess)
+        var idResult = AccountId.Create(accountId);
+        if (idResult.CurrentState != ResultStatus.Success)
         {
-                return Result<AccountResponse>.Validation(result?.Errors);
+            return
+                Result<AccountDto>.Validation(idResult.Errors);
         }
 
-        var account = await accountsRepository.GetAccountAsync(accountId);
+        var account = await accountsRepository.GetAccountAsync(idResult.Value, ct);
 
-        if (account is null || account.Id == default)
+        if (account is null)
         {
-            return Result<AccountResponse>.NotFound("Account not found");
+            return Result<AccountDto>.NotFound("Account not found");
         }
 
-        return Result<AccountResponse>.Success(AccountMappings.ToResponse(account));
+        return Result<AccountDto>.Success(AccountMappings.ToAccountDto(account));
     }
-
-
-
 
     /// <summary>
-    /// Retrieves a list of all accounts asynchronously.
+    /// Retrieves all accounts asynchronously.
     /// </summary>
-    /// <returns>A list of <see cref="Account"/> objects, or null if no accounts are found.</returns>
-    /// <exception cref="Exception">Thrown when no accounts are found in the repository.</exception>
-    public async Task<Result<IReadOnlyList<AccountResponse>?>> GetAccountsAsync()
+    /// <param name="ct">A token to cancel the operation, for example when the caller's deadline passes.</param>
+    /// <returns>
+    /// A successful <see cref="Result{T}"/> containing the accounts as <see cref="AccountDto"/>s.
+    /// The list is empty if there are no accounts; it is never null.
+    /// </returns>
+    public async Task<Result<IReadOnlyList<AccountDto>>> GetAccountsAsync(
+            CancellationToken ct)
     {
-        var accounts = await accountsRepository.GetAccountsAsync();
+        var accounts = await accountsRepository.GetAccountsAsync(ct);
 
-        if (accounts == null || accounts.Count == 0)
-        {
-            return Result<IReadOnlyList<AccountResponse>?>.NotFound("No accounts found");
-        }
-
-        return Result<IReadOnlyList<AccountResponse>?>.Success(AccountMappings.ToResponseList(accounts));
+        return Result<IReadOnlyList<AccountDto>>.Success(AccountMappings.ToAccountDtoList(accounts));
     }
-
-
-
-
 }

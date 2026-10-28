@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package accounts.v1;
+
+import "google/type/money.proto";
+
+option csharp_namespace = "Accounts.Api.V1";
+
+message Account{
+  // email was removed
+  reserved 4;
+  reserved "email";
+
+  int32 account_id = 1;
+  string first_name = 2;
+  string last_name = 3;
+
+  google.type.Money balance = 5;
+  google.type.Money overdraft_limit = 6;
+}
+message GetAccountRequest{
+  int32 account_id = 1;
+}
+
+message GetAccountResponse{
+  Account account = 1;
+}
+
+message GetAccountsRequest{
+
+}
+
+message GetAccountsResponse {
+  repeated Account accounts = 1;
+}
+
+service AccountsService{
+  rpc GetAccount(GetAccountRequest) returns (GetAccountResponse);
+  rpc GetAccounts(GetAccountsRequest) returns (GetAccountsResponse);
+}

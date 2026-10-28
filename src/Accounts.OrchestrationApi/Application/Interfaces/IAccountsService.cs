@@ -7,6 +7,6 @@ namespace PortfolioApplicationAPI.Application.Interfaces;
 
 public interface IAccountsService
 {
-    Task<Result<AccountResponse?>> GetAccountAsync(string accountId);
-    Task<Result<IReadOnlyList<AccountResponse>>> GetAccountsAsync();
+    Task<Result<AccountResponse>> GetAccountAsync(int accountId, CancellationToken ct);
+    Task<Result<IReadOnlyList<AccountResponse>>> GetAccountsAsync(CancellationToken ct);
 }

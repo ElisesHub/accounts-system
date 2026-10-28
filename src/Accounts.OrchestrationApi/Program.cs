@@ -1,17 +1,16 @@
-using AccountsAPI.Services;
-using AccountsApplicationAPI.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using PortfolioApplicationAPI.Application.Interfaces;
-using PortfolioApplicationAPI.Infrastructure.ExternalClients;
+using PortfolioApplicationAPI.Application.Services;
 using PortfolioApplicationAPI.Infrastructure.ExternalClients.Configuration;
+using PortfolioApplicationAPI.Infrastructure.ExternalClients.gRPC;
 using PortfolioApplicationAPI.Infrastructure.Security;
 using PortfolioApplicationAPI.Infrastructure.Security.ApiKeys;
 using PortfolioApplicationAPI.Presentation.Authentication;
 using PortfolioApplicationAPI.Presentation.ExceptionHandling;
 using PortfolioApplicationAPI.Presentation.Models;
 using PortfolioApplicationAPI.Presentation.Models.Authentication;
-
+using AccountsGrpc = Accounts.Api.V1.AccountsService;
 var builder = WebApplication.CreateBuilder(args);
 
 // Loads Docker/container-mounted secrets from /run/secrets.
@@ -76,13 +75,14 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IAccountsService, AccountsService>();
 builder.Services.AddScoped<IApiKeyValidator, ApiKeyValidator>();
-builder.Services.AddHttpClient<IExternalAccountsClient, ExternalAccountsClient>((serviceProvider, client) =>
+builder.Services.AddGrpcClient<AccountsGrpc.AccountsServiceClient>((serviceProvider, grpcOptions) =>
 {
     var options = serviceProvider
         .GetRequiredService<IOptions<ExternalApiOptions>>()
         .Value;
-    client.BaseAddress = new Uri(options.BaseUrl);
+    grpcOptions.Address = new Uri(options.BaseUrl);
 });
+builder.Services.AddScoped<IExternalAccountsClient, AccountsClient>();
 builder.Services.AddHealthChecks();
 var app = builder.Build();
 app.UseExceptionHandler();
@@ -95,8 +95,6 @@ if (app.Environment.IsDevelopment())
 
 app.MapHealthChecks("/health");
 app.MapControllers().RequireAuthorization("RequireApiKey");
-
-// app.UseHttpsRedirection();
 
 
 app.Run();

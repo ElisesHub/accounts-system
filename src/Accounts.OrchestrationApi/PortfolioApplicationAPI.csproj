@@ -10,10 +10,23 @@
 
     <ItemGroup>
         <PackageReference Include="FluentResults" Version="4.0.0" />
+        <PackageReference Include="Google.Protobuf" Version="3.36.2" />
+        <PackageReference Include="Grpc.Net.ClientFactory" Version="2.84.0" />
+        <PackageReference Include="Grpc.Tools" Version="2.85.0">
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.3" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
     </ItemGroup>
+    <ItemGroup>
+        
+        <PackageReference Include="Google.Api.CommonProtos" Version="2.17.0" GeneratePathProperty="true" />
+    </ItemGroup>
 
+    <ItemGroup>
+        <Protobuf Include="..\..\protos\accounts\v1\accounts.proto" ProtoRoot="..\..\protos" GrpcServices="Client" AdditionalImportDirs="$(PkgGoogle_Api_CommonProtos)\content\protos" />
+    </ItemGroup>
     <ItemGroup>
       <_ContentIncludedByDefault Remove="Presentation\Properties\launchSettings.json" />
     </ItemGroup>

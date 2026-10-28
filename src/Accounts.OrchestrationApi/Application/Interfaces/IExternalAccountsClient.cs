@@ -1,10 +1,10 @@
 using FluentResults;
 using PortfolioApplicationAPI.Domain.Entities;
 
-namespace AccountsApplicationAPI.Application.Interfaces;
+namespace PortfolioApplicationAPI.Application.Interfaces;
 
 public interface IExternalAccountsClient
 {
-    Task<Account?> GetAccountAsync(string id);
-    Task<IReadOnlyList<Account>?> GetAccountsAsync();
+    Task<Result<Account>> GetAccountAsync(int id, CancellationToken ct);
+    Task<Result<IReadOnlyList<Account>>> GetAccountsAsync(CancellationToken ct);
 }

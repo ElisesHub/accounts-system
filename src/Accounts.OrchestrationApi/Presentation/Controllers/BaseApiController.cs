@@ -10,7 +10,6 @@ public abstract class BaseApiController : ControllerBase
 {
     protected IActionResult FromResult<T>(Result<T> result)
     {
-
         if (result.IsFailed)
         {
             if(result.HasError<NotFoundError>())
@@ -33,12 +32,8 @@ public abstract class BaseApiController : ControllerBase
                 });
             }
 
-            return BadRequest(new ApiErrorResponse
-            {
-                Code = ApiErrorCodes.BadRequest.ToString(),
-                Message = result.Errors.FirstOrDefault()?.Message ?? "A problem occurred while processing your request.",
-                TraceId = HttpContext.TraceIdentifier
-            });
+            throw new InvalidOperationException(
+                $"Unhandled result error type(s): {string.Join(", ", result.Errors.Select(e => e.GetType().Name).ToList())}");
         }
 
         return Ok(result.Value);

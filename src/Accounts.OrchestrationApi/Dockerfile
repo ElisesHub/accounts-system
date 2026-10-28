@@ -2,14 +2,22 @@
 USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
-EXPOSE 8081
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["PortfolioApplicationAPI.csproj", "./"]
-RUN dotnet restore "PortfolioApplicationAPI.csproj"
-COPY . .
+
+COPY ["src/Accounts.OrchestrationApi/PortfolioApplicationAPI.csproj", "src/Accounts.OrchestrationApi/"]
+
+RUN dotnet restore "src/Accounts.OrchestrationApi/PortfolioApplicationAPI.csproj"
+
+COPY ["protos/", "protos/"]
+COPY ["src/Accounts.OrchestrationApi/", "src/Accounts.OrchestrationApi/"]
+
+# Work from the project folder so the build/publish lines stay short
+WORKDIR /src/src/Accounts.OrchestrationApi
+
+
 RUN dotnet build "PortfolioApplicationAPI.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish

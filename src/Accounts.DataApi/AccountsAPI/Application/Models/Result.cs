@@ -14,7 +14,7 @@ public class Result<T>
     {
         return new Result<T>
         {
-            CurrentState = ResultStatus.IsSuccess,
+            CurrentState = ResultStatus.Success,
             Value = value
         };
     }
@@ -23,7 +23,7 @@ public class Result<T>
     {
         return new Result<T>
         {
-            CurrentState = ResultStatus.IsValidationError,
+            CurrentState = ResultStatus.ValidationError,
             Errors = new Dictionary<string, string[]>
             {
                 [field] = [message]
@@ -35,7 +35,7 @@ public class Result<T>
     {
         return new Result<T>
         {
-            CurrentState = ResultStatus.IsValidationError,
+            CurrentState = ResultStatus.ValidationError,
             Errors = errors
         };
     }
@@ -44,7 +44,7 @@ public class Result<T>
     {
         return new Result<T>
         {
-            CurrentState = ResultStatus.IsNotFound,
+            CurrentState = ResultStatus.NotFound,
             Message = message
         };
     }
@@ -52,5 +52,5 @@ public class Result<T>
 
 public enum ResultStatus
 {
-    Unknown = 0, IsSuccess, IsValidationError, IsNotFound
+    Unknown = 0, Success, ValidationError, NotFound
 }

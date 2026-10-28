@@ -1,26 +1,25 @@
-using AccountsAPI.Application.Dtos.ApiResponses;
+using AccountsAPI.Application.Dtos.Accounts;
 using AccountsAPI.Domain.Entities;
 
 namespace AccountsAPI.Application.Mappings;
 
 public static class AccountMappings
 {
-    public static AccountResponse ToResponse(Account account)
+    public static AccountDto ToAccountDto(Account account)
     {
-        return new AccountResponse
+        return new AccountDto
         {
             Id = account.Id.Value,
             FirstName = account.FirstName,
             LastName = account.LastName,
-            Email = account.Email,
             Balance = account.Balance,
             OverdraftLimit = account.OverdraftLimit
         };
     }
 
-    public static IReadOnlyList<AccountResponse> ToResponseList(IReadOnlyList<Account> accounts)
+    public static IReadOnlyList<AccountDto> ToAccountDtoList(IReadOnlyList<Account> accounts)
     {
-        return accounts.Select(model => new AccountResponse
+        return accounts.Select(model => new AccountDto
         {
             Id = model.Id.Value,
             FirstName = model.FirstName,

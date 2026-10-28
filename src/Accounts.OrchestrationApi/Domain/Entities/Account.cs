@@ -8,4 +8,6 @@ public class Account
     public string Email { get; set; } = string.Empty;
     public decimal Balance { get; set; }
     public decimal OverdraftLimit { get; set; }
+
+    public string CurrencyCode { get; set; }
 }

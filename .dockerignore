@@ -1,10 +1,12 @@
-﻿**/bin/
+**/bin/
 **/obj/
 **/.vs/
 **/.idea/
 **/.vscode/
 .git/
-
+secrets/
+mySQLDb/
+.idea/
 **/.dockerignore
 **/.env
 **/.git

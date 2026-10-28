@@ -32,4 +32,6 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
-uploads/
+
+docker-compose.override.yaml
+http-client.private.env.json
