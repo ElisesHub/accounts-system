@@ -76,7 +76,7 @@ dotnet user-secrets set "AccountsApiKey" "your-accounts-api-key"
 **In Docker**: the keys are Docker secrets mounted under `/run/secrets`, and the base URL is set in `docker-compose.yaml` using the compose service name:
 
 ```yaml
-ExternalDbApi__BaseUrl: "http://data-api:8080"
+ExternalDbApi__BaseUrl: "http://data-api:8081"
 ```
 
 The double underscore maps to the nested key `ExternalDbApi:BaseUrl`.
