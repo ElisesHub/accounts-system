@@ -3,11 +3,8 @@ using AccountsAPI.Application.Services;
 using AccountsAPI.Infrastructure.Repositories;
 using AccountsAPI.Infrastructure.Security;
 using AccountsAPI.Presentation.Authentication;
-using AccountsAPI.Presentation.ExceptionHandling;
 using AccountsAPI.Presentation.Grpc;
-using AccountsAPI.Presentation.Models;
 using AccountsAPI.Presentation.Models.Authentication;
-using Microsoft.AspNetCore.Mvc;
 using MySqlConnector;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,34 +35,8 @@ builder.Services.AddAuthorization(options =>
     });
 });
 
-builder.Services.AddControllers()
-    .ConfigureApiBehaviorOptions(options =>
-    {
-        // Ensures automatic model validation failures use the API's standard error response shape.
-        options.InvalidModelStateResponseFactory = context =>
-        {
-            var errors = context.ModelState
-                .Where(x => x.Value != null && x.Value.Errors.Count > 0)
-                .ToDictionary(
-                    kvp => kvp.Key,
-                    kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
-                );
 
-            var response = new ApiErrorResponse
-            {
-                Code = ApiErrorCodes.ValidationError.ToString(),
-                Message = "One or more validation errors occurred.",
-                FieldErrors = errors,
-                TraceId = context.HttpContext.TraceIdentifier
-            };
-
-            return new BadRequestObjectResult(response);
-        };
-    });
 builder.Services.AddGrpc();
-
-builder.Services.AddProblemDetails();
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 var accountsDbConnectionString =
     builder.Configuration.GetConnectionString("AccountsDb")
@@ -74,11 +45,9 @@ var accountsDbConnectionString =
 builder.Services.AddMySqlDataSource(accountsDbConnectionString);
 
 // Reports the API as healthy only when it can connect to the Accounts database.
-builder.Services.AddHealthChecks()
-    .AddMySql(accountsDbConnectionString);
+builder.Services.AddHealthChecks().AddMySql(accountsDbConnectionString);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IAccountsRepository, AccountsRepository>();
 builder.Services.AddScoped<IAccountsService, AccountsService>();
@@ -86,19 +55,8 @@ builder.Services.AddScoped<IApiKeyValidator, ApiKeyValidator>();
 
 var app = builder.Build();
 
-app.UseExceptionHandler();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
 // Keep the health endpoint unauthenticated so Docker can check container health without an API key.
 app.MapHealthChecks("/health");
-
-app.MapControllers().RequireAuthorization("RequireApiKey");
 app.MapGrpcService<AccountsGrpcService>().RequireAuthorization("RequireApiKey");
-// app.UseHttpsRedirection();
 
 app.Run();
