@@ -1,0 +1,27 @@
+### GetAccount: existing account → expect OK
+GRPC {{grpcHost}}/accounts.v1.AccountsService/GetAccount
+x-api-key: {{apiKey}}
+
+{
+"account_id": 1
+}
+
+### GetAccount: nonexisting account → expect NOT_FOUND
+GRPC {{grpcHost}}/accounts.v1.AccountsService/GetAccount
+x-api-key: {{apiKey}}
+
+{
+  "account_id": 9999999
+}
+
+### GetAccount: incorrect account ID → expect INVALID_ARGUMENT
+GRPC {{grpcHost}}/accounts.v1.AccountsService/GetAccount
+x-api-key: {{apiKey}}
+
+{
+  "account_id": -1
+}
+
+### GetAccounts
+GRPC localhost:8081/accounts.v1.AccountsService/GetAccounts
+x-api-key: {{apiKey}}
