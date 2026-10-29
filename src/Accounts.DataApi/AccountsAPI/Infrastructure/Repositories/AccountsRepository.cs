@@ -16,13 +16,16 @@ public class AccountsRepository(NpgsqlDataSource dataSource)
     private const string GetAccountSql =
         """
         SELECT account_id, first_name, last_name, balance, overdraft_limit, currency_code
-        FROM get_account(@account_id)
+         FROM accounts a
+                 JOIN customers c ON c.customer_id = a.customer_id
+        WHERE a.account_id = @account_id;
         """;
 
     private const string GetAccountsSql =
         """
         SELECT account_id, first_name, last_name, balance, overdraft_limit, currency_code
-        FROM get_accounts()
+        FROM accounts a JOIN customers c ON c.customer_id = a.customer_id
+        ORDER BY a.account_id;
         """;
 
     /// <summary>
