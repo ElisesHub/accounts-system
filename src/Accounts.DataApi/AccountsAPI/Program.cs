@@ -59,6 +59,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddScoped<IAccountsRepository, AccountsRepository>();
 builder.Services.AddScoped<IAccountsService, AccountsService>();
 builder.Services.AddScoped<IApiKeyValidator, ApiKeyValidator>();
+builder.Services.AddScoped<IStatementRepository, StatementRepository>();
 
 var app = builder.Build();
 
