@@ -1,7 +1,7 @@
+using AccountsAPI.Application.Models.Statements;
 using AccountsAPI.Domain.Entities;
-using AccountsAPI.Domain.Statements;
 
-namespace AccountsAPI.Application.Interfaces;
+namespace AccountsAPI.Application.Interfaces.Repositories;
 
 public interface IStatementRepository
 {
