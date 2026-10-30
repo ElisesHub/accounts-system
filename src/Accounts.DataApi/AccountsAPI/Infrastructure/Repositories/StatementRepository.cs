@@ -13,7 +13,7 @@ public class StatementRepository(NpgsqlDataSource dataSource)
 {
     private const string GetTransactionSqlString = """
                                                     select t.transaction_id, amount, occurred_at, counterparty_name, description, tt.title as transaction_type, a.currency_code from transactions t join transaction_types tt on  t.transaction_type_id = tt.transaction_type_id 
-                                                   join accounts a on t.account_id = a.account_id           where  t.account_id = @account_id order by account_id, occurred_at, transaction_id
+                                                   join accounts a on t.account_id = a.account_id           where  t.account_id = @account_id order by t.account_id, occurred_at, t.transaction_id
                                                                /* order by matches the index for faster results*/
                                                    """;
 
