@@ -1,5 +1,5 @@
 using System.Data.Common;
-using AccountsAPI.Domain.Statements;
+using AccountsAPI.Application.Models.Statements;
 
 namespace AccountsAPI.Infrastructure.Mappings;
 
@@ -17,5 +17,6 @@ public static class StatementDataMappings
                 ? reader.GetString(reader.GetOrdinal("counterparty_name"))
                 : null,
             TransactionType = reader.GetString(reader.GetOrdinal("transaction_type")),
+            CurrencyCode = reader.GetString(reader.GetOrdinal("currency_code"))
         };
 }

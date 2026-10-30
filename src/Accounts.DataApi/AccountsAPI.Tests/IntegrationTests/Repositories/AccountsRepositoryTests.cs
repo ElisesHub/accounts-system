@@ -2,6 +2,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AccountsAPI.Application.Interfaces;
+using AccountsAPI.Application.Interfaces.Repositories;
 using AccountsAPI.Domain.Entities;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;

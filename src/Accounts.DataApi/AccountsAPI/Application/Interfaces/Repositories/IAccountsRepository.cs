@@ -7,5 +7,5 @@ public interface IAccountsRepository
     Task<Account?> GetAccountAsync(AccountId accountId, CancellationToken ct);
     Task<IReadOnlyList<Account>> GetAccountsAsync(CancellationToken ct);
 
-    Task<bool> DoesAccountExist(AccountId accountId, CancellationToken ct);
+    Task<bool> AccountExistsAsync(AccountId accountId, CancellationToken ct);
 }

@@ -1,4 +1,4 @@
-namespace AccountsAPI.Domain.Statements;
+namespace AccountsAPI.Application.Models.Statements;
 
 public sealed class TransactionLine
 {
@@ -14,5 +14,7 @@ public sealed class TransactionLine
     public required string TransactionType { get; init; }
 
     public required string Description { get; init; }
+
+    public required string CurrencyCode { get; init;  }
 
 }
