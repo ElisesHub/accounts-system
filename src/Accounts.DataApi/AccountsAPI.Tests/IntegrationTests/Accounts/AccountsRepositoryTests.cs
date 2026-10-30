@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using AccountsAPI.Application.Interfaces;
 using AccountsAPI.Application.Interfaces.Repositories;
 using AccountsAPI.Domain.Entities;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 

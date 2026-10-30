@@ -1,13 +1,11 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using AccountsAPI.Application.Interfaces;
 using AccountsAPI.Application.Interfaces.Repositories;
 using AccountsAPI.Application.Models;
-using AccountsAPI.Application.Services;
 using AccountsAPI.Application.Services.Accounts;
 using AccountsAPI.Domain.Entities;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
