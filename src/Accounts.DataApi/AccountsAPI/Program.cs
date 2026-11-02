@@ -8,6 +8,7 @@ using AccountsAPI.Infrastructure.Repositories;
 using AccountsAPI.Infrastructure.Security;
 using AccountsAPI.Presentation.Authentication;
 using AccountsAPI.Presentation.Grpc;
+using AccountsAPI.Presentation.Interceptors;
 using AccountsAPI.Presentation.Models.Authentication;
 using Npgsql;
 
@@ -42,7 +43,10 @@ builder.Services.AddAuthorization(options =>
     });
 });
 
-builder.Services.AddGrpc();
+builder.Services.AddGrpc(options =>
+{
+    options.Interceptors.Add<ExceptionInterceptor>();
+});
 
 var baseConnectionString =
     builder.Configuration.GetConnectionString("AccountsDb")

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using AccountsAPI.Application.Models;
 using AccountsAPI.Presentation.Grpc;
 using Grpc.Core;
@@ -20,21 +19,22 @@ public static class ResultTranslationHelper
             case ResultStatus.Success:
                 if (result.Value is not null) return result.Value;
 
-                logger.LogError("Unexpected null value found for {ContextTitle} {ContextValue}", contextTitle, contextValue);
-                throw InternalError();
+                logger.LogError("Unexpected null value found for {ContextTitle} {ContextValue}. Trace ID: {TraceID}.", contextTitle, contextValue, TraceContextHelper.CurrentTraceId());
+                throw RpcExceptionHelper.InternalError();
 
 
             case ResultStatus.Unknown:
-                logger.LogError("Result for {ContextTitle} {ContextValue} had no state set", contextTitle, contextValue);
-                throw InternalError();
+                logger.LogError("Result for {ContextTitle} {ContextValue} had no state set. Trace ID: {TraceID}.", contextTitle, contextValue, TraceContextHelper.CurrentTraceId());
+                throw RpcExceptionHelper.InternalError();
+
             default:
-                logger.LogError("Unexpected result {State} for {ContextTitle} {ContextValue}",
-                    result.CurrentState, contextTitle, contextValue);
-                throw InternalError();
+                logger.LogError("Unexpected result {State} for {ContextTitle} {ContextValue}. Trace ID: {TraceID}.",
+                    result.CurrentState, contextTitle, contextValue, TraceContextHelper.CurrentTraceId());
+                throw RpcExceptionHelper.InternalError();
 
         }
 
     }
 
-    private static RpcException InternalError() => new RpcException(new Status(StatusCode.Internal, $"An internal error occurred. Trace ID: {Activity.Current?.TraceId.ToString() ?? "unavailable"}"));
+
 }

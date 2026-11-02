@@ -14,6 +14,7 @@ public class StatementGrpcService(ILogger<StatementGrpcService> logger, IStateme
 {
     public override async Task GetTransactions(grpcService.GetTransactionsRequest request, IServerStreamWriter<grpcService.GetTransactionsResponse> responseStream, ServerCallContext context)
     {
+
         var accountIdResult = AccountId.Create(request.AccountId);
 
         var accountId = accountIdResult.GetValueOrThrow(logger, "Account ID", request.AccountId.ToString());
