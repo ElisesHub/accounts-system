@@ -2,7 +2,10 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+
 using DotNet.Testcontainers.Configurations;
+using Grpc.Core;
+using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Npgsql;
@@ -54,5 +57,25 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
     {
         await base.DisposeAsync();
         await _postgres.DisposeAsync();
+    }
+
+
+    /// <summary>
+    /// Creates a gRPC channel to the in-memory test server. Wrap it in any generated client.
+    /// </summary>
+    public GrpcChannel CreateGrpcChannel() =>
+        GrpcChannel.ForAddress(Server.BaseAddress, new GrpcChannelOptions
+        {
+            HttpHandler = Server.CreateHandler()
+        });
+
+    /// <summary>
+    /// The API key header every call needs.
+    /// </summary>
+    public Metadata ApiKey()
+    {
+        var headers = new Metadata();
+        headers.Add("x-api-key", CustomWebApplicationFactory.TestApiKey);
+        return headers;
     }
 }

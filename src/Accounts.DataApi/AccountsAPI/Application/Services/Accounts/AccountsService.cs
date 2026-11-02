@@ -1,10 +1,11 @@
 using AccountsAPI.Application.Dtos.Accounts;
-using AccountsAPI.Application.Interfaces;
+using AccountsAPI.Application.Interfaces.Repositories;
+using AccountsAPI.Application.Interfaces.Services;
 using AccountsAPI.Application.Mappings;
 using AccountsAPI.Application.Models;
 using AccountsAPI.Domain.Entities;
 
-namespace AccountsAPI.Application.Services;
+namespace AccountsAPI.Application.Services.Accounts;
 
 /// <summary>
 /// Provides services for managing and retrieving account information.

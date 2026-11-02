@@ -1,10 +1,10 @@
 namespace AccountsAPI.Domain.Entities;
 
-public class Account
+public sealed class Account
 {
-    public AccountId Id { get; set; }
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public decimal Balance { get; set; }
-    public decimal OverdraftLimit { get; set; }
+    public required AccountId Id { get; init; }
+    public required string FirstName { get; init; }
+    public required string LastName { get; init; }
+    public required decimal Balance { get; init; }
+    public required decimal OverdraftLimit { get; init; }
 }

@@ -3,8 +3,13 @@ syntax = "proto3";
 package accounts.v1;
 
 import "google/type/money.proto";
-
+import "google/protobuf/timestamp.proto";
 option csharp_namespace = "Accounts.Api.V1";
+
+service AccountsService{
+  rpc GetAccount(GetAccountRequest) returns (GetAccountResponse);
+  rpc GetAccounts(GetAccountsRequest) returns (GetAccountsResponse);
+}
 
 message Account{
   // email was removed
@@ -32,9 +37,4 @@ message GetAccountsRequest{
 
 message GetAccountsResponse {
   repeated Account accounts = 1;
-}
-
-service AccountsService{
-  rpc GetAccount(GetAccountRequest) returns (GetAccountResponse);
-  rpc GetAccounts(GetAccountsRequest) returns (GetAccountsResponse);
 }

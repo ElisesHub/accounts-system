@@ -16,10 +16,10 @@
         <PackageReference Include="Npgsql.DependencyInjection" Version="10.0.3" />
     </ItemGroup>
     <ItemGroup>
-        <Protobuf Include="..\..\..\protos\**\*.proto" ProtoRoot="..\..\..\protos" GrpcServices="Server" AdditionalImportDirs="$(PkgGoogle_Api_CommonProtos)/content/protos" />
-    </ItemGroup>
-    <ItemGroup>
-      <Folder Include="Domain\" />
+        <Protobuf Include="..\..\..\protos\**\*.proto" ProtoRoot="..\..\..\protos" GrpcServices="Both" AdditionalImportDirs="$(PkgGoogle_Api_CommonProtos)/content/protos" />
+        <Protobuf Update="..\..\..\protos\accounts\v1\statements.proto">
+          <Link>v1\statements.proto</Link>
+        </Protobuf>
     </ItemGroup>
 
     <ItemGroup>

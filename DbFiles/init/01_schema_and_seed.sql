@@ -74,43 +74,7 @@ CREATE INDEX ix_accounts_customer_id         ON accounts (customer_id);
 CREATE INDEX ix_accounts_account_status_id   ON accounts (account_status_id);
 CREATE INDEX ix_transactions_transaction_type_id ON transactions (transaction_type_id);
 
--- ─── Functions (replace the GetAccount / GetAccounts procedures) ─────────
 
-CREATE FUNCTION get_account(p_account_id integer)
-    RETURNS TABLE (
-                      account_id       integer,
-                      first_name       varchar,
-                      last_name        varchar,
-                      balance          numeric,
-                      overdraft_limit  numeric,
-                      currency_code    char(3)
-                  )
-    LANGUAGE sql STABLE
-AS $$
-SELECT a.account_id, c.first_name, c.last_name,
-       a.balance, a.overdraft_limit, a.currency_code
-FROM accounts a
-         JOIN customers c ON c.customer_id = a.customer_id
-WHERE a.account_id = p_account_id;
-$$;
-
-CREATE FUNCTION get_accounts()
-    RETURNS TABLE (
-                      account_id       integer,
-                      first_name       varchar,
-                      last_name        varchar,
-                      balance          numeric,
-                      overdraft_limit  numeric,
-                      currency_code    char(3)
-                  )
-    LANGUAGE sql STABLE
-AS $$
-SELECT a.account_id, c.first_name, c.last_name,
-       a.balance, a.overdraft_limit, a.currency_code
-FROM accounts a
-         JOIN customers c ON c.customer_id = a.customer_id
-ORDER BY a.account_id;
-$$;
 
 -- ─── Seed: lookups ───────────────────────────────────────────────────────
 

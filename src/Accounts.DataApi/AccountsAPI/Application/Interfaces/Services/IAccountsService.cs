@@ -1,8 +1,7 @@
 using AccountsAPI.Application.Dtos.Accounts;
 using AccountsAPI.Application.Models;
-using AccountsAPI.Domain.Entities;
 
-namespace AccountsAPI.Application.Interfaces;
+namespace AccountsAPI.Application.Interfaces.Services;
 
 public interface IAccountsService
 {

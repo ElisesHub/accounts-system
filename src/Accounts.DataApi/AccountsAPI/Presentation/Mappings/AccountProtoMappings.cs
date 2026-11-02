@@ -14,7 +14,7 @@ public static class AccountProtoMappings
     /// </summary>
     /// <param name="account">The account to convert.</param>
     /// <returns>A complete proto <see cref="Account"/>, with amounts as <c>google.type.Money</c> in the account's currency.</returns>
-    public static Account ToAccount(AccountDto account) =>
+    public static Account ToProtoAccount(this AccountDto account) =>
         new Account
         {
             AccountId = account.Id,
@@ -25,8 +25,8 @@ public static class AccountProtoMappings
         };
 
 
-    public static IReadOnlyList<Account> ToAccounts(IReadOnlyList<AccountDto> accounts)
+    public static IReadOnlyList<Account> ToProtoAccounts(this IReadOnlyList<AccountDto> accountDtos)
     {
-        return accounts.Select(account => ToAccount(account)).ToList();
+        return accountDtos.Select(accountDto => accountDto.ToProtoAccount()).ToList();
     }
 }
