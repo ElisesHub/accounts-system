@@ -26,7 +26,7 @@ public class StatementGrpcService(ILogger<StatementGrpcService> logger, IStateme
         {
             var response = new grpcService.GetTransactionsResponse
             {
-                Transaction = StatementProtoMappings.ToTransaction(transaction)
+                Transaction = transaction.ToProtoTransaction()
             };
             await responseStream.WriteAsync(response);
         }

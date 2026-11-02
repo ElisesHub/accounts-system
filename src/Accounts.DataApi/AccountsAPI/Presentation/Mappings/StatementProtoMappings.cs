@@ -17,7 +17,7 @@ public static class StatementProtoMappings
     /// </summary>
     /// <param name="t">The transaction line to convert.</param>
     /// <returns>The proto message for the transaction line.</returns>
-    public static grpcStatements.Transaction ToTransaction(TransactionLine t)
+    public static grpcStatements.Transaction ToProtoTransaction(this TransactionLine t)
     {
         var transaction = new grpcStatements.Transaction
         {

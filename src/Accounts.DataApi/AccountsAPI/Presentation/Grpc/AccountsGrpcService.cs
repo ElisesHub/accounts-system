@@ -39,7 +39,7 @@ public class AccountsGrpcService(
 
         return new GetAccountResponse
         {
-            Account = AccountProtoMappings.ToAccount(account)
+            Account = account.ToProtoAccount()
         };
     }
 
@@ -62,8 +62,7 @@ public class AccountsGrpcService(
         var accounts = accountsResult.GetValueOrThrow(logger,  "Accounts", whichAccountsRequested);
 
         var response = new GetAccountsResponse();
-        response.Accounts.AddRange(
-            AccountProtoMappings.ToAccounts(accounts));
+        response.Accounts.AddRange(accounts.ToProtoAccounts());
         return response;
 
     }
