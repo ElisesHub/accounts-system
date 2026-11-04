@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using PortfolioApplicationAPI.Presentation.Models;
  namespace PortfolioApplicationAPI.Presentation.ExceptionHandling;
 
@@ -14,10 +15,12 @@ public sealed class GlobalExceptionHandler(
         Exception exception,
         CancellationToken cancellationToken)
     {
+        // One ID for the log and the response; it's the W3C trace ID that also crossed the gRPC call.
+        var traceId = Activity.Current?.TraceId.ToString() ?? httpContext.TraceIdentifier;
+
         logger.LogError(
             exception,
-            "Unhandled exception. TraceId: {TraceId}, Path: {Path}",
-            httpContext.TraceIdentifier,
+            "Unhandled exception. TraceId: {TraceId}, Path: {Path}", traceId,
             httpContext.Request.Path);
 
         var statusCode = StatusCodes.Status500InternalServerError;
@@ -57,7 +60,7 @@ public sealed class GlobalExceptionHandler(
         {
             Code = code,
             Message = message,
-            TraceId = httpContext.TraceIdentifier,
+            TraceId = traceId,
 
             // only include developer detail outside production
             DeveloperMessage = environment.IsDevelopment() ? exception.Message : null
