@@ -8,8 +8,9 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: "http://+:8080"
       ExternalAccountsApi__BaseUrl: "http://orchestration-api:8080"
-      Auth0__Domain: your-tenant.eu.auth0.com
     secrets:
+      - source: Auth0Domain
+        target: Auth0:Domain
       - source: AccountsApplicationApiKey
         target: AccountsApplicationApiKey
       - source: Auth0ClientId
@@ -29,10 +30,10 @@ services:
       ASPNETCORE_URLS: "http://+:8080"
       ExternalDbApi__BaseUrl: "http://data-api:8081"
     secrets:
-      - source: AccountsApiKey
-        target: AccountsApiKey
       - source: AccountsApplicationApiKey
         target: AccountsApplicationApiKey
+      - source: AccountsApiKey
+        target: AccountsApiKey
     depends_on:
       - data-api
     restart: unless-stopped
@@ -45,10 +46,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__AccountsDb: "Host=db;Port=5432;Database=accountsdata;Username=accounts_app"
     secrets:
-      - source: AccountsApiKey
-        target: AccountsApiKey
       - source: DbAppPassword
         target: Database:AppPassword
+      - source: Auth0Domain
+        target: Auth0:Domain
     depends_on:
       db:
         condition: service_healthy
@@ -74,18 +75,20 @@ services:
       retries: 5
       start_period: 30s
 volumes:
-    db-data:
+  db-data:
 
 secrets:
   AccountsApiKey:
-    file: ./secrets/AccountsApiKey.txt
+    file: ./secrets/DataApi/AccountsApiKey.txt
   AccountsApplicationApiKey:
-    file: ./secrets/AccountsApplicationApiKey.txt
+    file: ./secrets/OrchestrationApi/AccountsApplicationApiKey.txt
   Auth0ClientId:
-    file: ./secrets/Auth0ClientId.txt
+    file: ./secrets/Front/Auth0ClientId.txt
   Auth0ClientSecret:
-    file: ./secrets/Auth0ClientSecret.txt
+    file: ./secrets/Front/Auth0ClientSecret.txt
   DbAdminPassword:
-    file: ./secrets/DbAdminPassword.txt
+    file: ./secrets/DataApi/DbAdminPassword.txt
   DbAppPassword:
-    file: ./secrets/DbAppPassword.txt
+    file: ./secrets/DataApi/DbAppPassword.txt
+  Auth0Domain:
+    file: ./secrets/Shared/Auth0Domain.txt
