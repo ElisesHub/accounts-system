@@ -34,6 +34,12 @@ services:
         target: AccountsApplicationApiKey
       - source: AccountsApiKey
         target: AccountsApiKey
+      - source: Auth0Domain
+        target: Auth0:Domain
+      - source: Auth0OrchestrationClientSecret
+        target: Auth0:ClientSecret
+      - source: Auth0OrchestrationClientId
+        target: Auth0:ClientId
     depends_on:
       - data-api
     restart: unless-stopped
@@ -92,3 +98,7 @@ secrets:
     file: ./secrets/DataApi/DbAppPassword.txt
   Auth0Domain:
     file: ./secrets/Shared/Auth0Domain.txt
+  Auth0OrchestrationClientSecret:
+    file: ./secrets/OrchestrationApi/Auth0ClientSecret.txt
+  Auth0OrchestrationClientId:
+    file: ./secrets/OrchestrationApi/Auth0ClientId.txt

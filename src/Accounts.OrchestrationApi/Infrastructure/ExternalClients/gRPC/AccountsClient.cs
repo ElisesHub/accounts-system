@@ -12,8 +12,7 @@ using Account = PortfolioApplicationAPI.Domain.Entities.Account;
 using AccountsGrpc = Accounts.Api.V1.AccountsService;
 namespace PortfolioApplicationAPI.Infrastructure.ExternalClients.gRPC;
 
-public class AccountsClient(AccountsGrpc.AccountsServiceClient client,
-    IOptions<ApiKeyOptions> options) : IExternalAccountsClient
+public class AccountsClient(AccountsGrpc.AccountsServiceClient client) : IExternalAccountsClient
 {
     public async Task<Result<Account>> GetAccountAsync(int id, CancellationToken ct)
     {
@@ -21,7 +20,6 @@ public class AccountsClient(AccountsGrpc.AccountsServiceClient client,
         {
             var response = await client.GetAccountAsync(
                 new GetAccountRequest { AccountId = id },
-                headers: new Metadata { { "x-api-key", GetOutgoingKey() } },
                 deadline: DateTime.UtcNow.AddSeconds(5),
                 cancellationToken: ct);
 
@@ -43,32 +41,11 @@ public class AccountsClient(AccountsGrpc.AccountsServiceClient client,
     {
         var response = await client.GetAccountsAsync(
             new GetAccountsRequest{},
-            headers: new Metadata { { "x-api-key", GetOutgoingKey() } },
             deadline: DateTime.UtcNow.AddSeconds(5),
             cancellationToken: ct);
 
         return Result.Ok<IReadOnlyList<Account>>(AccountDataMappings.ToAccounts(response.Accounts));
     }
 
-    /// <summary>
-    /// Retrieves the outgoing key from the configuration.
-    /// </summary>
-    /// <returns>A string representing the outgoing key.</returns>
-    /// <exception cref="Exception">Thrown if the outgoing key is not found or is null/empty.</exception>
-    private string GetOutgoingKey()
-    {
-        if (options?.Value is null)
-        {
-            throw new InvalidOperationException("ApiKeyOptions not configured.");
-        }
-        var key = options?.Value?.AccountsApiKey;
 
-        if (string.IsNullOrWhiteSpace(key))
-        {
-            throw new InvalidOperationException("Outgoing key not found.");
-        }
-
-        return key;
-
-    }
 }

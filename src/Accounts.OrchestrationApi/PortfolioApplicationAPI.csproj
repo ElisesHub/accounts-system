@@ -30,5 +30,8 @@
     <ItemGroup>
       <_ContentIncludedByDefault Remove="Presentation\Properties\launchSettings.json" />
     </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Infrastructure\Models\" />
+    </ItemGroup>
 
 </Project>
