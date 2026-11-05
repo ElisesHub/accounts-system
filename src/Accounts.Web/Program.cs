@@ -39,11 +39,7 @@ builder.Services.AddOptions<ApiKeyOptions>()
 
 builder.Services.AddOptions<ExternalApiOptions>()
     .Bind(builder.Configuration.GetSection(ExternalApiOptions.SectionName))
-    .Validate(options => !string.IsNullOrWhiteSpace(options.BaseUrl),
-        "External API base URL is missing.")
-    .Validate(
-        options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _),
-        "ExternalApiOptions:BaseUrl must be a valid absolute URI.")
+    .ValidateDataAnnotations()
     .ValidateOnStart();
 
 // Add services to the container.

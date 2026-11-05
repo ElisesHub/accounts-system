@@ -30,7 +30,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: "http://+:8080"
-      ExternalDbApi__BaseUrl: "http://data-api:8081"
+      ExternalDbApi__BaseUrl: "https://data-api:8081"
+      ExternalDbApi__CaCertificatePath: /run/secrets/ca.crt
     secrets:
       - source: AccountsApplicationApiKey
         target: AccountsApplicationApiKey
@@ -114,4 +115,4 @@ secrets:
   DataApiKey:
     file: ./secrets/DataApi/data-api.key
   CaCert:
-    file: ./secrets/DataApi/ca.crt
+    file: ./secrets/Shared/ca.crt
