@@ -40,6 +40,8 @@ services:
         target: Auth0:ClientSecret
       - source: Auth0OrchestrationClientId
         target: Auth0:ClientId
+      - source: CaCert
+        target: ca.crt
     depends_on:
       data-api:
         condition: service_started
@@ -52,11 +54,17 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__AccountsDb: "Host=db;Port=5432;Database=accountsdata;Username=accounts_app"
+      Kestrel__Endpoints__Grpc__Certificate__Path: /run/secrets/data-api.crt
+      Kestrel__Endpoints__Grpc__Certificate__KeyPath: /run/secrets/data-api.key
     secrets:
       - source: DbAppPassword
         target: Database:AppPassword
       - source: Auth0Domain
         target: Auth0:Domain
+      - source: DataApiCrt
+        target: data-api.crt
+      - source: DataApiKey
+        target: data-api.key
     depends_on:
       db:
         condition: service_healthy
@@ -101,3 +109,9 @@ secrets:
     file: ./secrets/OrchestrationApi/Auth0ClientSecret.txt
   Auth0OrchestrationClientId:
     file: ./secrets/OrchestrationApi/Auth0ClientId.txt
+  DataApiCrt:
+    file: ./secrets/DataApi/data-api.crt
+  DataApiKey:
+    file: ./secrets/DataApi/data-api.key
+  CaCert:
+    file: ./secrets/DataApi/ca.crt
