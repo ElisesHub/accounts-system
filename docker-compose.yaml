@@ -18,7 +18,9 @@ services:
       - source: Auth0ClientSecret
         target: Auth0:ClientSecret
     depends_on:
-      - orchestration-api
+      orchestration-api:
+        condition: service_started
+
     restart: unless-stopped
 
   orchestration-api:
@@ -32,8 +34,6 @@ services:
     secrets:
       - source: AccountsApplicationApiKey
         target: AccountsApplicationApiKey
-      - source: AccountsApiKey
-        target: AccountsApiKey
       - source: Auth0Domain
         target: Auth0:Domain
       - source: Auth0OrchestrationClientSecret
@@ -41,7 +41,8 @@ services:
       - source: Auth0OrchestrationClientId
         target: Auth0:ClientId
     depends_on:
-      - data-api
+      data-api:
+        condition: service_started
     restart: unless-stopped
 
   data-api:
@@ -84,8 +85,6 @@ volumes:
   db-data:
 
 secrets:
-  AccountsApiKey:
-    file: ./secrets/DataApi/AccountsApiKey.txt
   AccountsApplicationApiKey:
     file: ./secrets/OrchestrationApi/AccountsApplicationApiKey.txt
   Auth0ClientId:
