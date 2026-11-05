@@ -5,7 +5,8 @@
     <Project Path="src/Accounts.DataApi/AccountsAPI/AccountsAPI.csproj" />
   </Folder>
   <Folder Name="/src/Accounts.OrchestrationApi/">
-    <Project Path="src/Accounts.OrchestrationApi/PortfolioApplicationAPI.csproj" />
+    <Project Path="src\Accounts.OrchestrationApi\OrchestrationApi\OrchestrationApi.csproj" />
+    <Project Path="src\Accounts.OrchestrationApi\OrchestrationApi.Tests\OrchestrationApi.Tests.csproj"  />
   </Folder>
   <Folder Name="/src/Accounts.Web/">
     <Project Path="src/Accounts.Web/PortfolioFe.csproj" />
