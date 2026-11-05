@@ -1,16 +1,14 @@
-using AccountsAPI.Application.Interfaces;
 using AccountsAPI.Application.Interfaces.Repositories;
 using AccountsAPI.Application.Interfaces.Services;
-using AccountsAPI.Application.Services;
 using AccountsAPI.Application.Services.Accounts;
 using AccountsAPI.Application.Services.Statements;
 using AccountsAPI.Infrastructure.Repositories;
-using AccountsAPI.Infrastructure.Security;
-using AccountsAPI.Presentation.Authentication;
+using AccountsAPI.Presentation.Authorization;
 using AccountsAPI.Presentation.Grpc;
 using AccountsAPI.Presentation.Interceptors;
-using AccountsAPI.Presentation.Models.Authentication;
 using Npgsql;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.Configure(o =>
@@ -23,25 +21,30 @@ builder.Configuration.AddKeyPerFile(
     directoryPath: "/run/secrets",
     optional: true);
 
-builder.Services.AddOptions<ApiKeyOptions>()
-    .Bind(builder.Configuration)
-    .Validate(options => !string.IsNullOrWhiteSpace(options.AccountsApiKey), "Some API keys are missing")
+builder.Services.AddOptions<Auth0Options>()
+    .BindConfiguration(Auth0Options.SectionName)
+    .ValidateDataAnnotations()
     .ValidateOnStart();
 
-builder.Services
-    .AddAuthentication(ApiKeyAuthenticationOptions.SchemeName)
-    .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
-        ApiKeyAuthenticationOptions.SchemeName,
-        options => { options.HeaderName = "x-api-key"; });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("RequireApiKey", policy =>
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer();
+builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IOptions<Auth0Options>>((
+            options, auth0)
+        =>
     {
-        policy.AuthenticationSchemes.Add(ApiKeyAuthenticationOptions.SchemeName);
-        policy.RequireAuthenticatedUser();
+        options.Authority =  $"https://{auth0.Value.Domain}/";
+        options.Audience = auth0.Value.Audience;
+        options.MapInboundClaims = false; // opt out of backward compatibility defaults
     });
-});
+
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(AuthPolicies.ReadAccounts, policy => policy
+        .RequireAuthenticatedUser()
+        .RequireAssertion(authorizationHandlerContext =>
+        authorizationHandlerContext.User.FindFirst("scope")?.Value.Split(' ').Contains("read:accounts") == true));
 
 builder.Services.AddGrpc(options =>
 {
@@ -65,18 +68,16 @@ builder.Services.AddNpgsqlDataSource(accountsDbConnectionString);
 // Reports the API as healthy only when it can connect to the database.
 builder.Services.AddHealthChecks().AddNpgSql(accountsDbConnectionString);
 
-builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddScoped<IAccountsRepository, AccountsRepository>();
 builder.Services.AddScoped<IAccountsService, AccountsService>();
-builder.Services.AddScoped<IApiKeyValidator, ApiKeyValidator>();
 builder.Services.AddScoped<IStatementRepository, StatementRepository>();
 builder.Services.AddScoped<IStatementsService, StatementsService>();
 
 var app = builder.Build();
-
-// Keep the health endpoint unauthenticated so Docker can check container health without an API key.
+  app.UseAuthentication();
+  app.UseAuthorization();
 app.MapHealthChecks("/health");
-app.MapGrpcService<AccountsGrpcService>().RequireAuthorization("RequireApiKey");
-app.MapGrpcService<StatementGrpcService>().RequireAuthorization("RequireApiKey");
+app.MapGrpcService<AccountsGrpcService>().RequireAuthorization(AuthPolicies.ReadAccounts);
+app.MapGrpcService<StatementGrpcService>().RequireAuthorization(AuthPolicies.ReadAccounts);
+
 app.Run();

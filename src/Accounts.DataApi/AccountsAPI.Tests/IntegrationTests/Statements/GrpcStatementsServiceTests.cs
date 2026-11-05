@@ -21,7 +21,7 @@ public class GrpcStatementsServiceTests(CustomWebApplicationFactory factory)
         var client = new StatementsService.StatementsServiceClient(factory.CreateGrpcChannel());
 
         // Act
-        using var call = client.GetTransactions(new GetTransactionsRequest { AccountId = 1 }, headers: factory.ApiKey(),
+        using var call = client.GetTransactions(new GetTransactionsRequest { AccountId = 1 }, headers: factory.Bearer(),
             cancellationToken: ct);
 
         var received = new List<Transaction>();
@@ -47,7 +47,7 @@ public class GrpcStatementsServiceTests(CustomWebApplicationFactory factory)
         var act = async () =>
         {
             using var call = client.GetTransactions(new GetTransactionsRequest { AccountId = accountId },
-                headers: factory.ApiKey(),
+                headers: factory.Bearer(),
                 cancellationToken: ct);
 
             await foreach (var _ in call.ResponseStream.ReadAllAsync(ct))
@@ -68,7 +68,7 @@ public class GrpcStatementsServiceTests(CustomWebApplicationFactory factory)
         var client = new StatementsService.StatementsServiceClient(factory.CreateGrpcChannel());
 
         // Act
-        using var call = client.GetTransactions(new GetTransactionsRequest { AccountId = 1 }, headers: factory.ApiKey(),
+        using var call = client.GetTransactions(new GetTransactionsRequest { AccountId = 1 }, headers: factory.Bearer(),
             cancellationToken: ct);
 
         var received = await call.ResponseStream.ReadAllAsync(ct).Select(m => m.Transaction).Take(2).ToListAsync(ct);

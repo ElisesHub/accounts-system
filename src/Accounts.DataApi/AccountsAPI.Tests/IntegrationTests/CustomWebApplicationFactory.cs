@@ -6,8 +6,12 @@ using System.Threading.Tasks;
 using DotNet.Testcontainers.Configurations;
 using Grpc.Core;
 using Grpc.Net.Client;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -16,10 +20,8 @@ namespace AccountsAPI.Tests.IntegrationTests;
 
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    public const string TestApiKey = "integration-test-api-key";
 
     private const string AppPassword = "integration-test-app-password";
-
     private static readonly string InitDirectory =
         Path.Combine(AppContext.BaseDirectory, "TestData", "init");
 
@@ -50,7 +52,23 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:AccountsDb", connectionString);
         builder.UseSetting("Database:AppPassword", AppPassword);
-        builder.UseSetting("AccountsApiKey", TestApiKey);
+        builder.UseSetting("Auth0:Audience", TestTokens.Audience);
+        builder.UseSetting("Auth0:Domain", "TestDomain");
+
+
+        builder.ConfigureTestServices(services =>
+        {
+            services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+            {
+                options.ConfigurationManager = null;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidIssuer = TestTokens.Issuer,
+                    ValidAudience = TestTokens.Audience,
+                    IssuerSigningKey = TestTokens.SigningKey
+                };
+            });
+        });
     }
 
     public override async ValueTask DisposeAsync()
@@ -58,7 +76,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         await base.DisposeAsync();
         await _postgres.DisposeAsync();
     }
-
 
     /// <summary>
     /// Creates a gRPC channel to the in-memory test server. Wrap it in any generated client.
@@ -70,12 +87,13 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         });
 
     /// <summary>
-    /// The API key header every call needs.
+    /// Authorization metadata for a gRPC call. Defaults to a valid token with read:accounts;
+    /// pass a token from TestTokens.Create(...) to test other cases.
     /// </summary>
-    public Metadata ApiKey()
+    public Metadata Bearer(string? token = null)
     {
         var headers = new Metadata();
-        headers.Add("x-api-key", CustomWebApplicationFactory.TestApiKey);
+        headers.Add("Authorization", $"Bearer {token ?? TestTokens.Create()}");
         return headers;
     }
 }
