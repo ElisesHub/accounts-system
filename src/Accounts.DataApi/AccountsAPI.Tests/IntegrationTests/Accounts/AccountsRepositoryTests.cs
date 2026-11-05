@@ -1,14 +1,13 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AccountsAPI.Application.Interfaces;
 using AccountsAPI.Application.Interfaces.Repositories;
 using AccountsAPI.Domain.Entities;
 using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace AccountsAPI.Tests.IntegrationTests.Repositories;
+namespace AccountsAPI.Tests.IntegrationTests.Accounts;
 
 /// <summary>
 /// Integration tests for <see cref="IAccountsRepository"/> against a real MySQL database
