@@ -24,7 +24,7 @@ services:
   orchestration-api:
     build:
       context: .
-      dockerfile: src/Accounts.OrchestrationApi/Dockerfile
+      dockerfile: src/Accounts.OrchestrationApi/OrchestrationApi/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: "http://+:8080"
