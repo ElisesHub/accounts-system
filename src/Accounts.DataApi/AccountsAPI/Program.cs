@@ -8,6 +8,8 @@ using AccountsAPI.Presentation.Grpc;
 using AccountsAPI.Presentation.Interceptors;
 using Npgsql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,21 +37,22 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
             options, auth0)
         =>
     {
-        options.Authority =  $"https://{auth0.Value.Domain}/";
+        options.Authority = $"https://{auth0.Value.Domain}/";
         options.Audience = auth0.Value.Audience;
         options.MapInboundClaims = false; // opt out of backward compatibility defaults
     });
 
 builder.Services.AddAuthorizationBuilder()
+    // Set up policies
     .AddPolicy(AuthPolicies.ReadAccounts, policy => policy
         .RequireAuthenticatedUser()
         .RequireAssertion(authorizationHandlerContext =>
-        authorizationHandlerContext.User.FindFirst("scope")?.Value.Split(' ').Contains("read:accounts") == true));
+            authorizationHandlerContext.User.FindFirst("scope")?.Value.Split(' ').Contains("read:accounts") == true))
+    // Make sure all endpoints require authenticated user by default
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
-builder.Services.AddGrpc(options =>
-{
-    options.Interceptors.Add<ExceptionInterceptor>();
-});
+// Translate unhandled exceptions into gRPC Internal errors with a trace ID.
+builder.Services.AddGrpc(options => { options.Interceptors.Add<ExceptionInterceptor>(); });
 
 var baseConnectionString =
     builder.Configuration.GetConnectionString("AccountsDb")
@@ -65,8 +68,8 @@ var accountsDbConnectionString = new NpgsqlConnectionStringBuilder(baseConnectio
 
 builder.Services.AddNpgsqlDataSource(accountsDbConnectionString);
 
-// Reports the API as healthy only when it can connect to the database.
-builder.Services.AddHealthChecks().AddNpgSql(accountsDbConnectionString);
+// this check backs health/ready
+builder.Services.AddHealthChecks().AddNpgSql(name: "accounts-db", tags: ["ready"]);
 
 builder.Services.AddScoped<IAccountsRepository, AccountsRepository>();
 builder.Services.AddScoped<IAccountsService, AccountsService>();
@@ -74,9 +77,20 @@ builder.Services.AddScoped<IStatementRepository, StatementRepository>();
 builder.Services.AddScoped<IStatementsService, StatementsService>();
 
 var app = builder.Build();
-  app.UseAuthentication();
-  app.UseAuthorization();
-app.MapHealthChecks("/health");
+app.UseAuthentication();
+app.UseAuthorization();
+// liveness, responds, dependencies not taken into account. Restart if this fails. Anonymous access allowed.
+app.MapHealthChecks("/health/live", new HealthCheckOptions()
+{
+    Predicate = _ => false
+}).AllowAnonymous();
+
+// readiness, checks database, don't route traffic if this fails. Anonymous access allowed.
+app.MapHealthChecks("/health/ready", new HealthCheckOptions()
+{
+    Predicate = check => check.Tags.Contains("ready")
+}).AllowAnonymous();
+
 app.MapGrpcService<AccountsGrpcService>().RequireAuthorization(AuthPolicies.ReadAccounts);
 app.MapGrpcService<StatementGrpcService>().RequireAuthorization(AuthPolicies.ReadAccounts);
 

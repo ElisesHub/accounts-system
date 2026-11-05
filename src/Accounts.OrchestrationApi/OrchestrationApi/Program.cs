@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using OrchestrationApi.Application.Interfaces;
@@ -9,6 +11,7 @@ using OrchestrationApi.Infrastructure.ExternalClients.gRPC;
 using OrchestrationApi.Infrastructure.Security;
 using OrchestrationApi.Infrastructure.Security.ApiKeys;
 using OrchestrationApi.Presentation.Authentication;
+using OrchestrationApi.Presentation.Authorization;
 using OrchestrationApi.Presentation.ExceptionHandling;
 using OrchestrationApi.Presentation.Models;
 using OrchestrationApi.Presentation.Models.Authentication;
@@ -43,15 +46,18 @@ builder.Services
         ApiKeyAuthenticationOptions.SchemeName,
         options => { options.HeaderName = "x-api-key"; });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("RequireApiKey", policy =>
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(AuthPolicies.RequireApiKey, policy =>
     {
         policy.AuthenticationSchemes.Add(ApiKeyAuthenticationOptions
             .SchemeName);
         policy.RequireAuthenticatedUser();
-    });
-});
+    })
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder()
+        .AddAuthenticationSchemes(ApiKeyAuthenticationOptions.SchemeName)
+        .RequireAuthenticatedUser()
+        .Build());
+
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
@@ -111,15 +117,17 @@ builder.Services.AddScoped<IExternalAccountsClient, AccountsClient>();
 builder.Services.AddHealthChecks();
 var app = builder.Build();
 app.UseExceptionHandler();
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.MapHealthChecks("/health");
-app.MapControllers().RequireAuthorization("RequireApiKey");
-
-
+app.UseAuthentication();
+app.UseAuthorization();
+// liveness only, no dependencies, anonymous for container probes
+app.MapHealthChecks("/health/live", new HealthCheckOptions()
+{
+    Predicate = _ => false
+}).AllowAnonymous();
+app.MapControllers().RequireAuthorization(AuthPolicies.RequireApiKey);
 app.Run();

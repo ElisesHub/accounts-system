@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OrchestrationApi.Infrastructure.ExternalClients.Auth0;
 
-internal class Auth0Options
+public class Auth0Options
 {
     public const string SectionName = "Auth0";
     [Required(ErrorMessage = "Auth0 Client ID is required for the app to start")]
