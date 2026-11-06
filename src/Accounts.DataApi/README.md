@@ -1,19 +1,18 @@
 # Accounts Data API
 
-The database-facing service of the [accounts system](../../README.md). It is the only component that connects to MySQL; the Orchestration API calls it over HTTP with an API key.
+The database-facing service of the [accounts system](../../README.md). It serves gRPC to the Orchestration API and is the only component that connects to PostgreSQL.
 
 ```text
-Orchestration API  →  Accounts Data API  →  MySQL
+Orchestration API  →  gRPC over TLS + JWT  →  Accounts Data API  →  PostgreSQL 18
 ```
 
 ## Responsibilities
 
-- Expose account endpoints to the Orchestration API
-- Authenticate requests with an API key
-- Run account queries against the MySQL `AccountsDb` database
-- Return validation errors in a consistent format
-- Handle unexpected exceptions through a global exception handler
-- Provide a database-aware health check
+- Serve the `accounts.v1.AccountsService` and `statements.v1.StatementsService` gRPC contracts
+- Authenticate callers with JWT access tokens from Auth0 and require the `read:accounts` scope
+- Run read-only queries against PostgreSQL as the `accounts_app` role
+- Translate expected outcomes into gRPC status codes in one place
+- Expose liveness and readiness health checks
 
 ## Project structure
 
@@ -22,85 +21,83 @@ src/Accounts.DataApi/
 ├── AccountsAPI/
 │   ├── Domain/           Account domain models and business rules
 │   ├── Application/      Service interfaces and application services
-│   ├── Infrastructure/   MySQL repositories, API key validation, configuration
-│   └── Presentation/     Controllers, authentication, error handling, request/response models
+│   ├── Infrastructure/   PostgreSQL repositories and configuration
+│   └── Presentation/     gRPC service implementations and error mapping
 └── AccountsAPI.Tests/
     ├── UnitTests/
     └── IntegrationTests/
 ```
 
-Requests flow Controller → `IAccountsService` → `IAccountsRepository` → MySQL, keeping controllers free of application and data-access logic.
+Requests flow gRPC service → application service → repository → PostgreSQL. The gRPC services contain no data-access logic, and the repositories know nothing about gRPC.
 
 ## Technologies
 
-ASP.NET Core Web API (.NET 10), Clean Architecture, Domain-Driven Design, MySQL with MySqlConnector, API key authentication, OpenAPI/Swagger, health checks, xUnit v3, Moq, FluentAssertions.
+ASP.NET Core gRPC (.NET 10, `Grpc.AspNetCore`), Protocol Buffers, Clean Architecture, Domain-Driven Design, PostgreSQL 18 with Npgsql, JWT bearer authentication (Auth0), TLS, ASP.NET Core health checks, structured JSON logging, xUnit v3, Testcontainers, NSubstitute, AwesomeAssertions.
 
-## Authentication
+## gRPC services
 
-Every controller requires the `RequireApiKey` policy:
+| Service | RPC | Kind |
+|---|---|---|
+| `accounts.v1.AccountsService` | `GetAccount` | Unary |
+| `accounts.v1.AccountsService` | `GetAccounts` | Unary |
+| `statements.v1.StatementsService` | `GetTransactions` | Server streaming |
 
-```csharp
-app.MapControllers().RequireAuthorization("RequireApiKey");
-```
+The contracts live in [`protos/`](../../protos) at the repository root.
 
-Requests must send the key in the `x-api-key` header. Missing or invalid keys are rejected before reaching the controller. `GET /health` is unauthenticated so Docker can check container health.
+`GetTransactions` streams one message per transaction, in date order, reading rows from PostgreSQL and writing them to the response one at a time. If the client disconnects or its deadline expires, cancellation flows back to the database query. The service checks that the account exists before streaming, so a missing account returns `NotFound` rather than an empty stream.
+
+## Endpoints and ports
+
+| Port | Protocol | Serves |
+|---|---|---|
+| 8081 | HTTPS, HTTP/2 | gRPC |
+| 8080 | HTTP/1.1 | Health checks |
+
+| Path | Auth | Checks |
+|---|---|---|
+| `/health/live` | None | The process is running; no dependency checks |
+| `/health/ready` | None | The database is reachable |
+
+## Authentication and authorization
+
+The API is secure by default: a fallback authorization policy requires an authenticated caller on every endpoint. Each gRPC service also requires the `read:accounts` scope, so a future write service can require its own scope. The health endpoints opt out explicitly with `AllowAnonymous()`.
+
+Callers send an Auth0 access token in the `Authorization: Bearer` header. The Orchestration API obtains it with the client credentials flow.
+
+## TLS
+
+In Docker, Kestrel serves gRPC on port 8081 with a certificate issued by the system's private CA. The certificate and key paths are set by Compose environment variables and point to Docker secrets under `/run/secrets`. When the API runs outside Docker, it uses the .NET development certificate instead. See [TLS between services](../../README.md#tls-between-services) for creating the certificate.
 
 ## Configuration
 
-| Key | Purpose |
-|---|---|
-| `ConnectionStrings:AccountsDb` | MySQL connection string |
-| `AccountsApiKey` | Key expected from the Orchestration API |
+Required settings are bound to options classes and validated at startup, so the API fails fast if one is missing or invalid. Values that are the same everywhere live in `appsettings.json`, values that differ per deployment come from environment variables, and secrets come from secret files.
 
-The API fails at startup if either is missing.
+The database password is the only secret part of the connection: host, database name and username are ordinary configuration.
 
-**Local development** uses .NET user secrets:
+**Local development** uses .NET user secrets for secret values:
 
 ```bash
 cd src/Accounts.DataApi/AccountsAPI
-dotnet user-secrets set "ConnectionStrings:AccountsDb" "Server=localhost;Port=3306;Database=AccountsDb;Uid=accounts_user;Pwd=yourpassword;"
-dotnet user-secrets set "AccountsApiKey" "your-accounts-api-key"
+dotnet user-secrets list
 ```
 
-**In Docker**, both values are Docker secrets mounted under `/run/secrets` and read by the key-per-file configuration provider. The connection string secret is mounted with the target name `ConnectionStrings:AccountsDb`, so the code reads it exactly as it does locally:
-
-```csharp
-builder.Configuration.GetConnectionString("AccountsDb")
-```
-
-See the [root README](../../README.md) for setting up the `secrets/` folder.
+**In Docker**, secrets are mounted under `/run/secrets` and read by the key-per-file configuration provider. See the [root README](../../README.md) for setting up the `secrets/` folder.
 
 ## Database
 
-The API expects the `AccountsDb` schema, including its stored procedures, to exist. In Docker it is created from `mySQLDb/accountsdb_dump_v1.sql` the first time the database volume is created.
+The API connects as `accounts_app`, a read-only role created by the database init scripts in `DbFiles/init/`. It uses inline SQL in its repositories rather than stored procedures or database functions, so every query lives next to the code that uses it. See [Database](../../README.md#database) in the root README for the schema and roles.
 
-## Endpoints
+## Errors
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| GET | `/health` | None | Checks the API can reach the database |
-| GET | `/api/accounts` | API key | Returns all accounts |
+Expected outcomes, such as an account not found or an invalid ID, are returned as results and translated to gRPC status codes (`NotFound`, `InvalidArgument`) in one place. Unexpected faults are logged once on the server with the W3C trace ID, and the caller receives a generic error message.
 
-Swagger UI is enabled in the Development environment only.
+## Logging
 
-## Error responses
-
-Validation errors return:
-
-```json
-{
-  "code": "ValidationError",
-  "message": "One or more validation errors occurred.",
-  "fieldErrors": { "fieldName": ["Validation error message"] },
-  "traceId": "request-trace-id"
-}
-```
-
-Unexpected exceptions are handled by `GlobalExceptionHandler` and returned in the same format.
+Outside the Development environment, the API writes JSON console logs that include trace and span IDs. In Development, it uses the simple console format.
 
 ## Running locally
 
-With a MySQL instance reachable through your user-secrets connection string:
+With a PostgreSQL instance reachable through your configured connection settings:
 
 ```bash
 dotnet run --project src/Accounts.DataApi/AccountsAPI
@@ -114,12 +111,14 @@ To run the whole system, use Docker Compose from the repository root. See the [r
 dotnet test src/Accounts.DataApi/AccountsAPI.Tests
 ```
 
-Unit tests cover the application services and API key validation. Integration tests run the repository against a real MySQL database.
+Docker must be running. The integration tests use Testcontainers to start a disposable PostgreSQL 18 container, initialised with the same scripts in `DbFiles/init/` as Docker Compose. The API then runs in memory, and the tests call it through a real gRPC client, including the streaming RPC. They also check that the health endpoints are reachable without authentication.
 
 ## Troubleshooting
 
-**`PROCEDURE AccountsDb.GetAccounts does not exist`**: the database was not initialised from the dump. Recreate the volume from the repository root with `docker compose down -v`, then `docker compose up --build`.
+**`Unauthenticated`**: the call has no access token, or the token is invalid or has the wrong audience.
 
-**401 Unauthorized**: check the `x-api-key` header matches the configured `AccountsApiKey`.
+**`PermissionDenied`**: the token is valid but lacks the `read:accounts` scope. Grant it to the machine-to-machine application in Auth0.
 
-**Health check fails**: check the connection string's host (`db` in Docker, `localhost` when running locally), credentials, and that MySQL has finished initialising.
+**`/health/ready` fails**: the API can't reach PostgreSQL. Check the host (`db` in Docker), the `accounts_app` password, and that the database has finished initialising.
+
+**`password authentication failed for user "accounts_app"`**: the database was initialised with a different password. Reset the volume from the repository root with `docker compose down -v`.

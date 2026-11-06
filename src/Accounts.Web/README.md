@@ -3,13 +3,13 @@
 The user-facing web application of the [accounts system](../../README.md). It renders the UI, handles sign-in with Auth0, and retrieves account data from the [Orchestration API](../Accounts.OrchestrationApi/README.md). It has no direct access to the other services' data or the database.
 
 ```text
-Browser  →  Accounts Web  →  Orchestration API  →  Accounts Data API  →  MySQL
+Browser  →  Accounts Web  →  HTTP + API key  →  Orchestration API  →  gRPC over TLS + JWT  →  Accounts Data API  →  PostgreSQL
 ```
 
 ## Responsibilities
 
 - Render the user interface with Razor Pages and MVC views
-- Authenticate users with Auth0
+- Sign users in with Auth0 (configured, but not yet required to view pages)
 - Call the Orchestration API through a typed `HttpClient`, sending an API key
 - Display account data
 - Show user-facing error and status-code pages
