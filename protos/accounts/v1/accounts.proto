@@ -3,7 +3,6 @@ syntax = "proto3";
 package accounts.v1;
 
 import "google/type/money.proto";
-import "google/protobuf/timestamp.proto";
 option csharp_namespace = "Accounts.Api.V1";
 
 service AccountsService{
