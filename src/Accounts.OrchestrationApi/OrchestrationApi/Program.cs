@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
@@ -36,8 +37,7 @@ builder.Services.AddOptions<Auth0Options>()
 
 builder.Services.AddOptions<ExternalApiOptions>()
     .Bind(builder.Configuration.GetSection(ExternalApiOptions.SectionName))
-    .Validate(options => !string.IsNullOrWhiteSpace(options.BaseUrl), "External API base URL is missing")
-    .Validate(options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _), "External API base URL is not valid")
+    .ValidateDataAnnotations()
     .ValidateOnStart();
 
 builder.Services
@@ -108,10 +108,26 @@ builder.Services.AddGrpcClient<AccountsGrpc.AccountsServiceClient>((serviceProvi
         var token = await tokenProvider.GetAccessTokenAsync(context.CancellationToken);
         metadata.Add("Authorization", $"Bearer {token}");
     })
-    .ConfigureChannel(channel =>
+    .ConfigurePrimaryHttpMessageHandler(serviceProvider =>
     {
-        // TODO: implement TLS between services
-        channel.UnsafeUseInsecureChannelCallCredentials = true;
+        var options = serviceProvider
+            .GetRequiredService<IOptions<ExternalApiOptions>>()
+            .Value;
+        var handler = new SocketsHttpHandler();
+
+        // If a CA is configured, trust only that CA for the Data API connection.
+        // Otherwise the OS trust store is used (e.g. the .NET dev certificate locally).
+        if (string.IsNullOrWhiteSpace(options.CaCertificatePath)) return handler;
+        var ca = X509Certificate2.CreateFromPem(File.ReadAllText(options.CaCertificatePath));
+
+        handler.SslOptions.CertificateChainPolicy = new X509ChainPolicy
+        {
+            TrustMode = X509ChainTrustMode.CustomRootTrust,  // ignore the OS store
+            CustomTrustStore = { ca },                       // trust only our CA
+            RevocationMode = X509RevocationMode.NoCheck      // our private CA publishes no revocation list
+        };
+
+        return handler;
     });
 builder.Services.AddScoped<IExternalAccountsClient, AccountsClient>();
 builder.Services.AddHealthChecks();
