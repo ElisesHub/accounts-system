@@ -20,6 +20,18 @@ using AccountsGrpc = Accounts.Api.V1.AccountsService;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.Configure(o =>
+    o.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.SpanId);
+if (builder.Environment.IsDevelopment())
+    builder.Logging.AddSimpleConsole(options => options.IncludeScopes = true);
+else
+    builder.Logging.AddJsonConsole(options =>
+    {
+        options.IncludeScopes = true;
+        options.UseUtcTimestamp = true;
+        options.TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff";
+    });
+
 // Loads Docker/container-mounted secrets from /run/secrets.
 // Each file name becomes a configuration key; each file's contents become the value.
 builder.Configuration.AddKeyPerFile(
@@ -122,9 +134,9 @@ builder.Services.AddGrpcClient<AccountsGrpc.AccountsServiceClient>((serviceProvi
 
         handler.SslOptions.CertificateChainPolicy = new X509ChainPolicy
         {
-            TrustMode = X509ChainTrustMode.CustomRootTrust,  // ignore the OS store
-            CustomTrustStore = { ca },                       // trust only our CA
-            RevocationMode = X509RevocationMode.NoCheck      // our private CA publishes no revocation list
+            TrustMode = X509ChainTrustMode.CustomRootTrust, // ignore the OS store
+            CustomTrustStore = { ca }, // trust only our CA
+            RevocationMode = X509RevocationMode.NoCheck // our private CA publishes no revocation list
         };
 
         return handler;
@@ -138,6 +150,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 app.UseAuthentication();
 app.UseAuthorization();
 // liveness only, no dependencies, anonymous for container probes

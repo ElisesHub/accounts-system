@@ -13,9 +13,19 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+
 builder.Logging.Configure(o =>
     o.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.SpanId);
-builder.Logging.AddSimpleConsole(o => o.IncludeScopes = true);
+
+if (builder.Environment.IsDevelopment())
+    builder.Logging.AddSimpleConsole(o => o.IncludeScopes = true);
+else
+    builder.Logging.AddJsonConsole(o =>
+    {
+        o.IncludeScopes = true;
+        o.UseUtcTimestamp =  true;
+        o.TimestampFormat = "yyyy-MM-dd HH:mm:ss";
+    });
 
 // Loads Docker/container-mounted secrets from /run/secrets.
 // Each file name becomes a configuration key, and each file's contents become the value.
