@@ -1,20 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="AwesomeAssertions" Version="9.6.0" />
-    <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.5" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
-    <PackageReference Include="xunit.v3" Version="3.2.2" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="AwesomeAssertions" Version="9.6.0"/>
+        <PackageReference Include="JetBrains.Annotations" Version="2025.2.4"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.5"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0"/>
+        <PackageReference Include="xunit.v3" Version="3.2.2"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">   <!-- add -->
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="xunit.v3" Version="3.2.2"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\OrchestrationApi\OrchestrationApi.csproj" />
-  </ItemGroup> 
+    <ItemGroup>
+        <ProjectReference Include="..\OrchestrationApi\OrchestrationApi.csproj"/>
+    </ItemGroup>
 </Project>
