@@ -1,91 +1,72 @@
 # Accounts Orchestration API
 
-The application-facing service of the [accounts system](../../README.md). It sits between the frontend and the [Accounts Data API](../Accounts.DataApi/README.md), and has no direct database access.
+The application-facing service of the [accounts system](../../README.md). It exposes a REST API to the frontend and calls the [Accounts Data API](../Accounts.DataApi/README.md) over gRPC. It has no direct database access.
 
 ```text
-Frontend  →  Orchestration API  →  Accounts Data API  →  MySQL
+Frontend  →  HTTP + API key  →  Orchestration API  →  gRPC over TLS + JWT  →  Accounts Data API  →  PostgreSQL
 ```
 
 ## Responsibilities
 
-- Expose account endpoints to the frontend
+- Expose account endpoints to the frontend as a REST API
 - Authenticate incoming requests with an API key
-- Call the Accounts Data API through a typed `HttpClient`, sending its own API key
-- Return account data to the frontend
-- Return validation errors in a consistent format
+- Call the Accounts Data API through a gRPC client, over TLS, with an Auth0 access token
+- Translate between the REST models the frontend uses and the gRPC contract of the Data API
 - Handle unexpected exceptions through a global exception handler
-- Provide a health check endpoint
+- Expose a liveness health check
 
 ## Project structure
 
 ```text
 src/Accounts.OrchestrationApi/
-├── Domain/           Account domain models and business rules
-├── Application/      Use-case orchestration and application services
-├── Infrastructure/   HTTP client for the Data API, API key validation, configuration
-└── Presentation/     Controllers, authentication, error handling, request/response models
+├── OrchestrationApi/
+│   ├── Domain/           Account domain models and business rules
+│   ├── Application/      Use-case orchestration and application services
+│   ├── Infrastructure/   gRPC client of the Data API, Auth0 token provider, API key validation, configuration
+│   └── Presentation/     Controllers, authentication, error handling, request/response models
+└── OrchestrationApi.Tests/
+    ├── UnitTests/
+    └── IntegrationTests/
 ```
 
-Requests flow Controller → `IAccountsService` → `IExternalAccountsClient` → Accounts Data API. The typed client keeps the application layer independent of the HTTP integration details:
-
-```csharp
-builder.Services.AddScoped<IAccountsService, AccountsService>();
-builder.Services.AddHttpClient<IExternalAccountsClient, ExternalAccountsClient>();
-```
+Requests flow controller → application service → gRPC client → Accounts Data API. The application layer depends on an interface, so it knows nothing about gRPC, TLS or tokens.
 
 ## Technologies
 
-ASP.NET Core Web API (.NET 10), Clean Architecture, Domain-Driven Design, typed `HttpClient`, API key authentication, OpenAPI/Swagger, health checks.
+ASP.NET Core Web API (.NET 10), Clean Architecture, Domain-Driven Design, gRPC client (`Grpc.Net.ClientFactory`), Protocol Buffers, Auth0 client credentials, TLS with a private CA, API key authentication, OpenAPI/Swagger, ASP.NET Core health checks, structured JSON logging, xUnit v3, AwesomeAssertions.
 
 ## Authentication
 
-Every controller requires the `RequireApiKey` policy:
+**Incoming requests.** The API is secure by default: its fallback authorization policy requires the API key scheme on every endpoint. Requests must send the key in the `x-api-key` header, and missing or invalid keys are rejected before reaching the controller. The health endpoint opts out explicitly with `AllowAnonymous()`.
 
-```csharp
-app.MapControllers().RequireAuthorization("RequireApiKey");
-```
+**Calls to the Data API.** The gRPC client attaches an Auth0 access token to every call as call credentials. The token is obtained with the client credentials flow, using the Orchestration API's machine-to-machine application in Auth0. The Data API requires the `read:accounts` scope.
 
-Incoming requests must send the key in the `x-api-key` header. Missing or invalid keys are rejected before reaching the controller. `GET /health` is unauthenticated.
+## TLS to the Data API
+
+The gRPC client connects to the Data API over HTTPS. Instead of the operating system's trust store, it trusts only the private CA that issued the Data API's certificate, loaded from the configured CA certificate file. Certificate validation is never disabled. If no CA certificate path is configured, the client falls back to the operating system's trust store.
+
+See [TLS between services](../../README.md#tls-between-services) for creating the certificates.
 
 ## Configuration
 
-| Key | Purpose | Secret |
+Required settings are bound to options classes and validated at startup. The API fails fast if a required value is missing, if the Data API base URL is not a valid absolute URL, or if a CA certificate path is set but the file doesn't exist.
+
+| Setting | Purpose | Secret |
 |---|---|---|
 | `AccountsApplicationApiKey` | Key expected from the frontend | Yes |
-| `AccountsApiKey` | Key sent to the Accounts Data API | Yes |
-| `ExternalDbApi:BaseUrl` | Base URL of the Accounts Data API, as an absolute URI | No |
+| Auth0 client ID and secret | Credentials of the machine-to-machine application used to get access tokens | Yes |
+| Data API base URL | Address of the Data API, e.g. `https://data-api:8081` in Docker | No |
+| CA certificate path | Root certificate used to trust the Data API | No |
 
-Startup fails if any value is missing or the base URL is not a valid absolute URI.
+**Local development**: secrets are .NET user secrets, and non-secret local values are in `appsettings.Development.json`.
 
-**Local development**: the keys are .NET user secrets, and the base URL is in `appsettings.Development.json`:
-
-```bash
-cd src/Accounts.OrchestrationApi
-dotnet user-secrets set "AccountsApplicationApiKey" "your-accounts-application-api-key"
-dotnet user-secrets set "AccountsApiKey" "your-accounts-api-key"
-```
-
-```json
-{
-  "ExternalDbApi": {
-    "BaseUrl": "http://localhost:5253"
-  }
-}
-```
-
-**In Docker**: the keys are Docker secrets mounted under `/run/secrets`, and the base URL is set in `docker-compose.yaml` using the compose service name:
-
-```yaml
-ExternalDbApi__BaseUrl: "http://data-api:8081"
-```
-
-The double underscore maps to the nested key `ExternalDbApi:BaseUrl`.
+**In Docker**: secrets are mounted under `/run/secrets`, and per-deployment values such as the base URL and the CA certificate path are set as environment variables in `docker-compose.yaml`. A double underscore in an environment variable name maps to a nested configuration key (`Section__Key` → `Section:Key`).
 
 ## Endpoints
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/health` | None | Service health status |
+| GET | `/health/live` | None | The process is running; no dependency checks |
 | GET | `/api/accounts` | API key | Returns all accounts from the Data API |
 
 Swagger UI is enabled in the Development environment only.
@@ -103,24 +84,40 @@ Validation errors return:
 }
 ```
 
-Unexpected exceptions are handled by `GlobalExceptionHandler` and returned in the same format.
+Unexpected exceptions, including failed calls to the Data API, are handled by `GlobalExceptionHandler`, logged once with the W3C trace ID, and returned in the same format.
+
+## Logging
+
+Outside the Development environment, the API writes JSON console logs that include trace and span IDs. In Development, it uses the simple console format.
 
 ## Running locally
 
 With the Accounts Data API running at the configured base URL:
 
 ```bash
-dotnet run --project src/Accounts.OrchestrationApi
+dotnet run --project src/Accounts.OrchestrationApi/OrchestrationApi
 ```
 
 To run the whole system, use Docker Compose from the repository root. See the [root README](../../README.md).
 
+## Tests
+
+```bash
+dotnet test src/Accounts.OrchestrationApi/OrchestrationApi.Tests
+```
+
+Unit tests cover API key validation. Integration tests run the API in memory with test configuration and check, for example, that the health endpoint is reachable without authentication.
+
 ## Troubleshooting
 
-**Startup fails**: check that all three configuration values are set and that the base URL is an absolute URI, such as `http://data-api:8080`.
+**Startup fails**: check that every required setting is set, that the Data API base URL is an absolute URL such as `https://data-api:8081`, and that the CA certificate file exists at the configured path.
 
 **401 Unauthorized**: check that the `x-api-key` header matches `AccountsApplicationApiKey`.
 
-**Accounts cannot be retrieved**: check that the Data API is running, that `ExternalDbApi:BaseUrl` points to it, and that `AccountsApiKey` matches the key the Data API expects. A 500 here usually means the error is in the Data API, so check its logs with `docker compose logs data-api`.
+**Certificate or SSL errors when calling the Data API**: the CA certificate is missing, or it comes from a different CA than the one that issued the Data API's certificate.
+
+**`Unauthenticated` or `PermissionDenied` from the Data API**: the Auth0 credentials are wrong, or the machine-to-machine application hasn't been granted `read:accounts`.
+
+**Accounts cannot be retrieved**: check that the Data API is running and that the base URL points to it. A 500 here usually means the error is in the Data API, so check its logs with `docker compose logs data-api`.
 
 **Swagger is not available**: it only runs with `ASPNETCORE_ENVIRONMENT=Development`.

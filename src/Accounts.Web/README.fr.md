@@ -3,13 +3,13 @@
 L’application web destinée aux utilisateurs du [système de gestion des comptes](../../README.fr.md). Elle affiche l’interface, gère la connexion via Auth0 et récupère les données des comptes depuis l’[Orchestration API](../Accounts.OrchestrationApi/README.fr.md). Elle n’accède pas directement aux autres services ni à la base de données.
 
 ```text
-Navigateur  →  Accounts Web  →  Orchestration API  →  Accounts Data API  →  MySQL
+Navigateur  →  Accounts Web  →  HTTP + clé API  →  Orchestration API  →  gRPC sur TLS + JWT  →  Accounts Data API  →  PostgreSQL
 ```
 
 ## Responsabilités
 
 - Afficher l’interface utilisateur avec Razor Pages et des vues MVC
-- Authentifier les utilisateurs via Auth0
+- Connecter les utilisateurs avec Auth0 (configuré, mais pas encore obligatoire pour consulter les pages)
 - Appeler l’Orchestration API via un `HttpClient` typé, en transmettant une clé API
 - Afficher les données des comptes
 - Afficher des pages d’erreur et de code de statut destinées aux utilisateurs
